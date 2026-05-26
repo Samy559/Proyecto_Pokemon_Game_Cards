@@ -10,7 +10,6 @@
     "serve:ssr:pokemon-card-game": "node dist/pokemon-card-game/server/server.mjs"
   },
   "private": true,
-  "packageManager": "npm@11.9.0",
   "dependencies": {
     "@angular/common": "^21.2.0",
     "@angular/compiler": "^21.2.0",
