@@ -1,0 +1,165 @@
+.menu-container {
+  min-height: 100vh;
+  background: repeating-linear-gradient(
+    45deg,
+    #78c850,
+    #78c850 20px,
+    #69b841 20px,
+    #69b841 40px
+  );
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Press Start 2P', cursive;
+  padding: 25px;
+  box-sizing: border-box;
+}
+
+.menu-card {
+  background: #ffffff;
+  width: 90%;
+  max-width: 700px;
+  padding: 35px;
+  border: 4px solid #333;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 4px #4a90e2, inset 0 0 0 8px #ffffff, 8px 8px 0px rgba(0,0,0,0.3);
+  text-align: left;
+}
+
+.menu-card h1 {
+  font-size: 22px;
+  color: #333;
+  margin-bottom: 20px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.menu-card > p {
+  font-family: 'VT323', monospace;
+  color: #444;
+  font-size: 24px;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.usuario-card {
+  background: #f8f8f8;
+  border: 3px solid #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 0 0 30px 0;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+}
+
+.usuario-card p {
+  margin: 0 0 10px 0;
+  color: #111;
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.usuario-card small {
+  display: block;
+  color: #555;
+  margin-bottom: 15px;
+  font-size: 22px;
+}
+
+.usuario-card button,
+.usuario-card a {
+  display: inline-block;
+  background: #ffcb05;
+  color: #222;
+  border: 3px solid #333;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 11px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #333;
+  transition: all 0.1s;
+}
+
+.usuario-card button:hover,
+.usuario-card a:hover {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #333;
+}
+
+.estadisticas-usuario {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.estadisticas-usuario div {
+  background: white;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+
+.estadisticas-usuario strong {
+  display: block;
+  font-size: 32px;
+  color: #3b4cca;
+}
+
+.estadisticas-usuario span {
+  display: block;
+  font-size: 20px;
+  color: #555;
+  margin-top: 5px;
+}
+
+.menu-opciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.menu-opciones a {
+  text-decoration: none;
+  background: transparent;
+  color: #333;
+  padding: 14px 10px 14px 35px;
+  font-size: 12px;
+  position: relative;
+  transition: background 0.1s, border-radius 0.1s;
+  border: 2px solid transparent;
+  line-height: 1.6;
+}
+
+.menu-opciones a::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0; 
+  height: 0; 
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 12px solid #333;
+  opacity: 0;
+}
+
+.menu-opciones a:hover {
+  border: 2px solid #333;
+  border-radius: 8px;
+  background: #f0f0f0;
+}
+
+.menu-opciones a:hover::before {
+  opacity: 1;
+}
+
+@media (max-width: 650px) {
+  .menu-opciones {
+    grid-template-columns: 1fr;
+  }
+}

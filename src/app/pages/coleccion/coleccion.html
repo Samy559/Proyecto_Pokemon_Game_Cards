@@ -1,0 +1,22 @@
+<div class="coleccion-container">
+  <header class="coleccion-header">
+    <div>
+      <h1>Colección de Cartas</h1>
+      <p>Cartas generadas usando la API de Pokémon</p>
+    </div>
+
+    <a routerLink="/menu" class="btn-volver">Volver al menú</a>
+  </header>
+
+  <div *ngIf="cargando" class="mensaje">
+    Cargando cartas...
+  </div>
+
+  <div *ngIf="error" class="mensaje error">
+    {{ error }}
+  </div>
+
+  <div class="grid-cartas" *ngIf="!cargando && !error">
+    <app-carta-pokemon *ngFor="let carta of cartas" [carta]="carta" modo="completa"></app-carta-pokemon>
+  </div>
+</div>

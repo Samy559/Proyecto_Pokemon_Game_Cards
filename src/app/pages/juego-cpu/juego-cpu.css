@@ -1,0 +1,269 @@
+.juego-container {
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: repeating-linear-gradient(
+    135deg,
+    #a8a878,
+    #a8a878 20px,
+    #989868 20px,
+    #989868 40px
+  );
+  color: #333;
+  font-family: 'Press Start 2P', cursive;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.juego-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 15px;
+  background: #fff;
+  padding: 10px 20px;
+  border: 4px solid #333;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 3px #705898, inset 0 0 0 6px #fff, 4px 4px 0px rgba(0,0,0,0.3);
+}
+
+.juego-header h1 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.juego-header p {
+  color: #555;
+  margin-top: 5px;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+}
+
+.btn-volver {
+  background: #ffcb05;
+  color: #222;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 10px;
+  border: 3px solid #333;
+  box-shadow: 3px 3px 0 #333;
+  transition: all 0.1s;
+}
+
+.btn-volver:hover {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #333;
+  background: #f2b807;
+}
+
+.mensaje-cargando {
+  background: white;
+  color: #222;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  font-family: 'VT323', monospace;
+  font-size: 26px;
+  border: 4px solid #333;
+  box-shadow: inset 0 0 0 4px #a890f0, inset 0 0 0 8px #fff, 8px 8px 0px rgba(0,0,0,0.3);
+}
+
+.tablero {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "estado rival acciones"
+    "estado jugador acciones";
+  gap: 10px;
+}
+
+.zona {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border: 4px solid #333;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 4px #c03028, inset 0 0 0 8px #fff, 4px 4px 0px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.zona.rival {
+  grid-area: rival;
+}
+
+.zona.jugador {
+  grid-area: jugador;
+  box-shadow: inset 0 0 0 4px #6890f0, inset 0 0 0 8px #fff, 4px 4px 0px rgba(0,0,0,0.3);
+}
+
+.zona h2 {
+  font-size: 14px;
+  margin-top: 0;
+  margin-bottom: 5px;
+}
+
+.zona h3 {
+  font-size: 12px;
+  margin: 5px 0;
+}
+
+.info-jugador {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.info-jugador span {
+  background: #ffcb05;
+  color: #222;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 2px solid #333;
+  font-size: 9px;
+}
+
+.campo,
+.mano {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  flex: 1;
+  align-items: center;
+}
+
+.acciones {
+  grid-area: acciones;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;
+  background: #fff;
+  padding: 15px;
+  border: 4px solid #333;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 4px #78c850, inset 0 0 0 8px #fff, 4px 4px 0px rgba(0,0,0,0.3);
+}
+
+.acciones button {
+  background: #ffcb05;
+  color: #222;
+  border: 3px solid #333;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 11px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #333;
+  transition: all 0.1s;
+}
+
+.acciones button:hover:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #333;
+  background: #f2b807;
+}
+
+.acciones button:disabled {
+  background: #ccc;
+  color: #777;
+  cursor: not-allowed;
+  box-shadow: 0 0 0 #333;
+  transform: translate(3px, 3px);
+}
+
+::ng-deep .tablero .carta-pokemon.mini {
+  transform: scale(0.85);
+  transform-origin: top center;
+  margin-bottom: -25px; /* offset the scale space */
+}
+
+.estado-turno {
+  grid-area: estado;
+  background: #fff;
+  padding: 15px;
+  border: 4px solid #333;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: flex-start;
+  box-shadow: inset 0 0 0 4px #f8d030, inset 0 0 0 8px #fff, 4px 4px 0px rgba(0,0,0,0.3);
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+}
+
+.estado-turno p {
+  margin: 0;
+  color: #444;
+}
+
+.estado-turno strong {
+  color: #e04444;
+}
+
+.estado-turno strong {
+  color: #e04444;
+}
+
+.resultado-final {
+  background: white;
+  color: #222;
+  padding: 30px;
+  border: 4px solid #333;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 25px;
+  box-shadow: inset 0 0 0 4px #e04444, inset 0 0 0 8px #fff, 8px 8px 0px rgba(0,0,0,0.3);
+}
+
+.resultado-final h2 {
+  font-size: 24px;
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #111;
+}
+
+.resultado-final p {
+  font-family: 'VT323', monospace;
+  font-size: 26px;
+  color: #444;
+}
+
+.nota-mazo {
+  display: block;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  color: #666;
+  margin: 15px 0;
+}
+
+.resultado-final button,
+.resultado-final a {
+  display: inline-block;
+  margin: 8px;
+  background: #ffcb05;
+  color: #222;
+  border: 3px solid #333;
+  padding: 12px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 11px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #333;
+  transition: all 0.1s;
+}
+
+.resultado-final button:hover,
+.resultado-final a:hover {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #333;
+  background: #f2b807;
+}

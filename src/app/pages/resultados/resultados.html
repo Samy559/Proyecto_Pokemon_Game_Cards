@@ -1,0 +1,72 @@
+<div class="resultados-container">
+  <header class="resultados-header">
+    <div>
+      <h1>Resultados Generales</h1>
+      <p>Resumen del progreso del jugador</p>
+    </div>
+
+    <a routerLink="/menu" class="btn-volver">Volver al menú</a>
+  </header>
+
+  <section *ngIf="mensaje" class="mensaje">
+    {{ mensaje }}
+
+    <br><br>
+
+    <a *ngIf="!sesionActiva" routerLink="/login" class="btn-login">
+      Iniciar sesión
+    </a>
+  </section>
+
+  <main *ngIf="!mensaje" class="resultados-grid">
+    <section class="perfil-card">
+      <h2>Perfil</h2>
+
+      <p><strong>Usuario:</strong> {{ nombreUsuario }}</p>
+      <p><strong>Correo:</strong> {{ correoUsuario }}</p>
+    </section>
+
+    <section class="estadistica-card">
+      <h2>{{ victorias }}</h2>
+      <p>Victorias</p>
+    </section>
+
+    <section class="estadistica-card">
+      <h2>{{ derrotas }}</h2>
+      <p>Derrotas</p>
+    </section>
+
+    <section class="estadistica-card">
+      <h2>{{ totalPartidas }}</h2>
+      <p>Partidas CPU registradas</p>
+    </section>
+
+    <section class="estadistica-card">
+      <h2>{{ porcentajeVictorias }}%</h2>
+      <p>Porcentaje de victorias</p>
+    </section>
+
+    <section class="estadistica-card">
+      <h2>{{ partidasLocales }}</h2>
+      <p>Partidas guardadas localmente</p>
+    </section>
+
+    <section class="estadistica-card">
+      <h2>{{ partidasSupabase }}</h2>
+      <p>Partidas guardadas en Supabase</p>
+    </section>
+
+    <section class="resumen-card">
+      <h2>Resumen</h2>
+
+      <p>
+        Esta pantalla muestra las estadísticas generales del jugador,
+        combinando datos locales del navegador y datos almacenados en Supabase.
+      </p>
+
+      <p>
+        Las victorias y derrotas se actualizan al terminar una partida contra la CPU.
+      </p>
+    </section>
+  </main>
+</div>

@@ -1,0 +1,71 @@
+<div class="login-container">
+  <div class="login-card">
+    <h1>{{ modoRegistro ? 'Crear cuenta' : 'Iniciar sesión' }}</h1>
+
+    <p>
+      {{ modoRegistro ? 'Registra tu cuenta para guardar tu progreso.' : 'Accede para continuar jugando.' }}
+    </p>
+
+    <form (ngSubmit)="modoRegistro ? registrarse() : iniciarSesion()">
+      <div class="campo" *ngIf="modoRegistro">
+        <label>Nombre de usuario</label>
+        <input
+          type="text"
+          name="nombreUsuario"
+          [(ngModel)]="nombreUsuario"
+          placeholder="Ej. SamPlayer"
+        >
+      </div>
+
+      <div class="campo">
+        <label>Correo electrónico</label>
+        <input
+          type="email"
+          name="correo"
+          [(ngModel)]="correo"
+          placeholder="correo@ejemplo.com"
+        >
+      </div>
+
+      <div class="campo">
+        <label>Contraseña</label>
+        <input
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          placeholder="Mínimo 6 caracteres"
+        >
+      </div>
+
+      <div class="campo" *ngIf="modoRegistro">
+        <label>Confirmar contraseña</label>
+        <input
+          type="password"
+          name="confirmarPassword"
+          [(ngModel)]="confirmarPassword"
+          placeholder="Repite tu contraseña"
+        >
+      </div>
+
+      <button type="submit" class="btn-principal" [disabled]="cargando">
+        {{ cargando ? 'Procesando...' : (modoRegistro ? 'Registrarse' : 'Iniciar sesión') }}
+      </button>
+    </form>
+
+    <p class="mensaje" *ngIf="mensaje">
+      {{ mensaje }}
+    </p>
+
+    <button type="button" class="btn-secundario" (click)="cambiarModo()">
+      {{ modoRegistro ? 'Ya tengo cuenta' : 'Crear cuenta nueva' }}
+    </button>
+
+    <a routerLink="/menu" class="btn-menu">
+      Continuar sin iniciar sesión
+    </a>
+
+    <a routerLink="/" class="btn-volver">
+      Volver al inicio
+    </a>
+  </div>
+</div>

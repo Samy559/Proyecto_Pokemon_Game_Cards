@@ -1,0 +1,101 @@
+.reglas-container {
+  min-height: 100vh;
+  background: repeating-linear-gradient(
+    -45deg,
+    #a040a0,
+    #a040a0 20px,
+    #903890 20px,
+    #903890 40px
+  );
+  color: #333;
+  font-family: 'Press Start 2P', cursive;
+  padding: 30px;
+}
+
+.reglas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 35px;
+  gap: 20px;
+  background: #fff;
+  padding: 20px 30px;
+  border: 4px solid #333;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 4px #e04444, inset 0 0 0 8px #fff, 8px 8px 0px rgba(0,0,0,0.3);
+}
+
+.reglas-header h1 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+.reglas-header p {
+  color: #555;
+  margin-top: 15px;
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+}
+
+.btn-volver {
+  background: #ffcb05;
+  color: #222;
+  padding: 10px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 11px;
+  border: 3px solid #333;
+  box-shadow: 3px 3px 0 #333;
+  transition: all 0.1s;
+}
+
+.btn-volver:hover {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #333;
+  background: #f2b807;
+}
+
+.reglas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 25px;
+}
+
+.regla-card {
+  background: white;
+  color: #222;
+  padding: 25px;
+  border-radius: 12px;
+  border: 4px solid #333;
+  box-shadow: inset 0 0 0 4px #f8d030, inset 0 0 0 8px #fff, 8px 8px 0px rgba(0,0,0,0.3);
+}
+
+.regla-card:nth-child(2n) {
+  box-shadow: inset 0 0 0 4px #6890f0, inset 0 0 0 8px #fff, 8px 8px 0px rgba(0,0,0,0.3);
+}
+
+.regla-card h2 {
+  margin-top: 0;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.regla-card p {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.regla-card ul {
+  padding-left: 25px;
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.regla-card li {
+  margin-bottom: 12px;
+}

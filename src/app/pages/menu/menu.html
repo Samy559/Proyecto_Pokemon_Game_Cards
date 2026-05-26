@@ -1,0 +1,51 @@
+<div class="menu-container">
+  <div class="menu-card">
+    <h1>Menú Principal</h1>
+
+    <section class="usuario-card">
+      <p>{{ mensajeSesion }}</p>
+
+      <div *ngIf="sesionActiva">
+        <small>{{ correoUsuario }}</small>
+
+      <div class="estadisticas-usuario">
+        <div>
+          <strong>{{ victorias }}</strong>
+          <span>Victorias</span>
+        </div>
+
+        <div>
+          <strong>{{ derrotas }}</strong>
+          <span>Derrotas</span>
+        </div>
+
+        <div>
+          <strong>{{ totalPartidas }}</strong>
+          <span>Partidas</span>
+        </div>
+      </div>
+
+      <button type="button" (click)="cerrarSesion()">
+        Cerrar sesión
+      </button>
+    </div>
+
+      <a *ngIf="!sesionActiva" routerLink="/login">
+        Iniciar sesión o registrarse
+      </a>
+    </section>
+
+    <p>Selecciona una opción para continuar</p>
+
+    <div class="menu-opciones">
+      <a routerLink="/coleccion">Colección de cartas</a>
+      <a routerLink="/mazo">Constructor de mazo</a>
+      <a routerLink="/juego-cpu">Jugar contra computadora</a>
+      <a routerLink="/juego-online">Jugar en línea</a>
+      <a routerLink="/historial">Historial de partidas</a>
+      <a routerLink="/resultados">Resultados generales</a>
+      <a routerLink="/reglas">Reglas del juego</a>
+      <a routerLink="/">Volver al inicio</a>
+    </div>
+  </div>
+</div>

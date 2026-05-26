@@ -1,0 +1,57 @@
+<div class="mazo-container">
+  <header class="mazo-header">
+    <div>
+      <h1>Constructor de Mazo</h1>
+      <p>{{ mensaje }}</p>
+    </div>
+
+    <a routerLink="/menu" class="btn-volver">Volver al menú</a>
+  </header>
+
+  <div *ngIf="cargando" class="mensaje-cargando">
+    Cargando cartas...
+  </div>
+
+  <main *ngIf="!cargando" class="mazo-layout">
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Tu mazo</h2>
+        <span>{{ mazoSeleccionado.length }} / 20 cartas</span>
+      </div>
+
+      <div class="acciones-mazo">
+        <button type="button" (click)="guardarMazo()">Guardar mazo</button>
+        <button type="button" class="btn-borrar" (click)="borrarMazo()">Borrar mazo</button>
+      </div>
+
+      <div *ngIf="mazoSeleccionado.length === 0" class="vacio">
+        Todavía no has seleccionado cartas.
+      </div>
+
+      <div class="lista-mazo" *ngIf="mazoSeleccionado.length > 0">
+        <app-carta-pokemon 
+          *ngFor="let carta of mazoSeleccionado; let i = index" 
+          [carta]="carta" 
+          modo="mano" 
+          (clickCarta)="quitarCarta(i)">
+        </app-carta-pokemon>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Cartas disponibles</h2>
+        <span>{{ cartasDisponibles.length }} cartas</span>
+      </div>
+
+      <div class="grid-cartas">
+        <app-carta-pokemon 
+          *ngFor="let carta of cartasDisponibles" 
+          [carta]="carta" 
+          modo="completa" 
+          (clickCarta)="agregarCarta(carta)">
+        </app-carta-pokemon>
+      </div>
+    </section>
+  </main>
+</div>

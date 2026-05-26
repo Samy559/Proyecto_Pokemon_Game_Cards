@@ -1,0 +1,66 @@
+<div class="historial-container">
+  <header class="historial-header">
+    <div>
+      <h1>Historial de Partidas</h1>
+      <p>Resultados guardados localmente y en Supabase</p>
+    </div>
+
+    <a routerLink="/menu" class="btn-volver">Volver al menú</a>
+  </header>
+
+  <section class="bloque-historial">
+    <div class="bloque-header">
+      <div>
+        <h2>Historial Local</h2>
+        <p>Partidas guardadas en el navegador</p>
+      </div>
+
+      <button type="button" (click)="borrarHistorialLocal()">
+        Borrar historial local
+      </button>
+    </div>
+
+    <section *ngIf="historialLocal.length === 0" class="sin-historial">
+      No hay partidas locales guardadas todavía.
+    </section>
+
+    <section class="lista-historial" *ngIf="historialLocal.length > 0">
+      <div class="partida-card" *ngFor="let partida of historialLocal">
+        <h3>{{ partida.resultado }}</h3>
+
+        <p><strong>Modo:</strong> {{ partida.modo }}</p>
+        <p><strong>Vida jugador:</strong> {{ partida.vidaJugador }}</p>
+        <p><strong>Vida CPU:</strong> {{ partida.vidaCpu }}</p>
+        <p><strong>Fecha:</strong> {{ partida.fecha }}</p>
+      </div>
+    </section>
+  </section>
+
+  <section class="bloque-historial">
+    <div class="bloque-header">
+      <div>
+        <h2>Historial Supabase</h2>
+        <p>Partidas guardadas en la nube con usuario autenticado</p>
+      </div>
+    </div>
+
+    <section *ngIf="cargandoSupabase" class="sin-historial">
+      Cargando historial remoto...
+    </section>
+
+    <section *ngIf="!cargandoSupabase && mensajeSupabase" class="sin-historial">
+      {{ mensajeSupabase }}
+    </section>
+
+    <section class="lista-historial" *ngIf="!cargandoSupabase && historialSupabase.length > 0">
+      <div class="partida-card remoto" *ngFor="let partida of historialSupabase">
+        <h3>{{ partida.resultado }}</h3>
+
+        <p><strong>Modo:</strong> {{ partida.modo }}</p>
+        <p><strong>Vida jugador:</strong> {{ partida.vida_jugador }}</p>
+        <p><strong>Vida CPU:</strong> {{ partida.vida_cpu }}</p>
+        <p><strong>Fecha:</strong> {{ partida.fecha | date:'short' }}</p>
+      </div>
+    </section>
+  </section>
+</div>

@@ -1,0 +1,152 @@
+<div class="juego-container">
+  <header class="juego-header">
+    <div>
+      <h1>Duelo Online</h1>
+      <p>{{ mensaje }}</p>
+    </div>
+    <a routerLink="/menu" class="btn-volver">Volver al menú</a>
+  </header>
+
+  <!-- LOBBY / SELECCION DE SALA -->
+  <main *ngIf="!partidaActual && sesionActiva" class="lobby-container">
+    <section class="online-card">
+      <h2>Crear partida</h2>
+      <p>Crea una sala online y comparte el código con otro jugador.</p>
+      <button type="button" (click)="crearPartida()" [disabled]="cargando">Crear sala</button>
+    </section>
+
+    <section class="online-card">
+      <h2>Unirse a partida</h2>
+      <p>Escribe el código de sala que te compartió otro jugador.</p>
+      <div class="form-sala">
+        <input type="text" [(ngModel)]="codigoSala" placeholder="Ej. A1B2C3">
+        <button type="button" (click)="unirseAPartida()" [disabled]="cargando">Unirse</button>
+      </div>
+    </section>
+
+    <section class="online-card" *ngIf="partidas.length > 0">
+      <h2>Tus partidas online</h2>
+      <div class="lista-partidas">
+        <div class="partida-card" *ngFor="let partida of partidas">
+          <h3>Sala {{ partida.codigo_sala }}</h3>
+          <p>Estado: {{ partida.estado }}</p>
+          <button type="button" (click)="abrirPartida(partida)">Reconectar</button>
+          <button type="button" *ngIf="partida.jugador_1 === usuarioActualId" (click)="borrarSala(partida)" style="background: #e04444; margin-left: 10px;">Borrar</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="mensaje-login" *ngIf="!sesionActiva">
+    <h2>Sesión requerida</h2>
+    <p>Inicia sesión para poder acceder al multijugador online.</p>
+    <a routerLink="/login">Iniciar sesión</a>
+  </section>
+
+  <!-- TABLERO DE JUEGO (IDÉNTICO A JUEGO-CPU) -->
+  <section class="resultado-final" *ngIf="partidaActual && partidaTerminada">
+    <h2>{{ resultadoPartida }}</h2>
+    <p>{{ mensaje }}</p>
+    <button type="button" (click)="salirYBorrarSala()">Volver al lobby</button>
+  </section>
+
+  <main *ngIf="partidaActual && !partidaTerminada" class="tablero">
+    <!-- ZONA RIVAL -->
+    <section class="zona rival">
+      <h2>Rival ({{ soyJugador1() ? 'Jugador 2' : 'Jugador 1' }})</h2>
+      <div class="info-jugador">
+        <span>Vida: {{ vidaRival }}</span>
+        <span>Mazo: {{ mazoRival.length }}</span>
+        <span>Mano: {{ manoRival.length }}</span>
+      </div>
+      <h3>Campo Rival</h3>
+      <div class="campo">
+        <app-carta-pokemon 
+          *ngFor="let carta of campoRival; let i = index"
+          [carta]="carta"
+          modo="mini"
+          [esEnemiga]="true"
+          (clickCarta)="atacarCartaRival(i)">
+        </app-carta-pokemon>
+      </div>
+    </section>
+
+    <!-- ACCIONES -->
+    <section class="acciones">
+      <button
+        type="button"
+        (click)="robarCartaJugador()"
+        [disabled]="yaRobo || turno !== 'jugador' || partidaTerminada"
+      >
+        Robar carta
+      </button>
+      <button
+        type="button"
+        (click)="atacarDirectoRival()"
+        [disabled]="yaAtaco || turno !== 'jugador' || partidaTerminada || !cartaJugadorSeleccionada"
+      >
+        Atacar directo
+      </button>
+      <button
+        type="button"
+        (click)="finalizarTurnoJugador()"
+        [disabled]="turno !== 'jugador' || partidaTerminada"
+      >
+        Terminar turno
+      </button>
+      <button
+        type="button"
+        (click)="partidaActual = null"
+        style="background: #e04444;"
+      >
+        Salir de sala
+      </button>
+    </section>
+
+    <!-- ESTADO DEL TURNO -->
+    <section class="estado-turno">
+      <p>Sala: <strong>{{ partidaActual.codigo_sala }}</strong></p>
+      <p>Rol: <strong>{{ obtenerMiRol() }}</strong></p>
+      <hr>
+      <p>Turno: <strong [style.color]="esMiTurno() ? '#78c850' : '#e04444'">{{ esMiTurno() ? 'Tuyo' : 'Del Rival' }}</strong></p>
+      <p>Robo usado: <strong>{{ yaRobo ? 'Sí' : 'No' }}</strong></p>
+      <p>Invocación usada: <strong>{{ yaInvoco ? 'Sí' : 'No' }}</strong></p>
+      <p>Ataque usado: <strong>{{ yaAtaco ? 'Sí' : 'No' }}</strong></p>
+      <p>Habilidad usada: <strong>{{ yaUsoHabilidad ? 'Sí' : 'No' }}</strong></p>
+    </section>
+
+    <!-- ZONA JUGADOR -->
+    <section class="zona jugador">
+      <h2>Tú ({{ obtenerMiRol() }})</h2>
+      <div class="info-jugador">
+        <span>Vida: {{ vidaJugador }}</span>
+        <span>Mazo: {{ mazoJugador.length }}</span>
+        <span>Mano: {{ manoJugador.length }}</span>
+      </div>
+      <h3>Tu campo</h3>
+      <div class="campo">
+        <app-carta-pokemon 
+          *ngFor="let carta of campoJugador; let i = index"
+          [carta]="carta"
+          modo="mini"
+          [seleccionada]="cartaJugadorSeleccionada === i"
+          [mostrarBotonHabilidad]="true"
+          [deshabilitarBotonHabilidad]="yaUsoHabilidad || turno !== 'jugador' || partidaTerminada"
+          (clickCarta)="seleccionarCartaJugador(i)"
+          (clickHabilidad)="usarHabilidadJugador(i)">
+        </app-carta-pokemon>
+      </div>
+      <h3>Tu mano</h3>
+      <div class="mano">
+        <app-carta-pokemon 
+          *ngFor="let carta of manoJugador; let i = index"
+          [carta]="carta"
+          modo="mini"
+          [mostrarBotonInvocar]="true"
+          [deshabilitarBotonInvocar]="turno !== 'jugador' || yaInvoco || partidaTerminada"
+          (clickInvocar)="invocarCarta(i)">
+        </app-carta-pokemon>
+      </div>
+    </section>
+  </main>
+</div>

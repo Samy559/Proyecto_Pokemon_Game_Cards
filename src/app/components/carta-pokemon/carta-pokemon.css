@@ -1,0 +1,381 @@
+.carta-pokemon {
+  --color-borde: #c0c0c0; /* Plata moderna */
+  --color-fondo: #f5f5f5;
+  --color-texto: #111;
+  --color-interior: #e2e2e2;
+  
+  position: relative;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #e6e6e6, #ffffff, #c5c5c5);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), inset 0 0 4px rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  color: var(--color-texto);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.carta-pokemon.completa {
+  width: 260px;
+  min-height: 360px;
+  height: auto;
+  padding: 10px;
+}
+
+.carta-pokemon.mano {
+  width: 220px;
+  min-height: 310px;
+  height: auto;
+  padding: 8px;
+}
+
+.carta-pokemon.mini {
+  width: 140px;
+  min-height: 195px;
+  height: auto;
+  padding: 6px;
+  border-radius: 10px;
+}
+
+.carta-pokemon:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 0 4px rgba(255, 255, 255, 0.8);
+}
+
+.carta-pokemon.seleccionada {
+  box-shadow: 0 0 0 4px #ffcb05, 0 15px 35px rgba(255, 203, 5, 0.5);
+  transform: translateY(-15px) scale(1.05);
+}
+
+.carta-pokemon.enemiga {
+  border: 2px solid #ff4444;
+}
+
+/* Tipos elementales (Fondos de carta) */
+.carta-pokemon.grass .carta-interior { background: linear-gradient(160deg, #b0e691, #62b957); }
+.carta-pokemon.fire .carta-interior { background: linear-gradient(160deg, #ff9d5c, #fd7d24); }
+.carta-pokemon.water .carta-interior { background: linear-gradient(160deg, #8cb5f5, #4a90e2); }
+.carta-pokemon.electric .carta-interior { background: linear-gradient(160deg, #fceb7b, #eed535); }
+.carta-pokemon.psychic .carta-interior { background: linear-gradient(160deg, #f3a3cf, #ea5d60); }
+.carta-pokemon.fighting .carta-interior { background: linear-gradient(160deg, #d56723, #a24b17); }
+.carta-pokemon.dark .carta-interior { background: linear-gradient(160deg, #707070, #404040); color: white; }
+.carta-pokemon.steel .carta-interior { background: linear-gradient(160deg, #a6b2ba, #7a8a96); }
+.carta-pokemon.fairy .carta-interior { background: linear-gradient(160deg, #f8bdf0, #ed6ec7); }
+.carta-pokemon.dragon .carta-interior { background: linear-gradient(160deg, #89a2e3, #4364c7); color: white; }
+.carta-pokemon.normal .carta-interior { background: linear-gradient(160deg, #e1e3e4, #a4acaf); }
+.carta-pokemon.bug .carta-interior { background: linear-gradient(160deg, #c3d21f, #8c9e0d); }
+.carta-pokemon.poison .carta-interior { background: linear-gradient(160deg, #d387de, #a040a8); color: white; }
+.carta-pokemon.ghost .carta-interior { background: linear-gradient(160deg, #968bc5, #5a4b9c); color: white; }
+.carta-pokemon.ice .carta-interior { background: linear-gradient(160deg, #bce6e6, #51c4e7); }
+.carta-pokemon.ground .carta-interior { background: linear-gradient(160deg, #f7de3f, #ab9842); }
+.carta-pokemon.rock .carta-interior { background: linear-gradient(160deg, #d4c294, #a38c21); }
+.carta-pokemon.flying .carta-interior { background: linear-gradient(160deg, #c6b7f5, #3dc7ef); }
+
+.carta-borde {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.4);
+  box-sizing: border-box;
+}
+
+.carta-interior {
+  width: 100%;
+  height: 100%;
+  border-radius: 9px;
+  padding: 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  background: linear-gradient(160deg, #f5f5f5, #d5d5d5); /* fallback */
+}
+
+.carta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 5px;
+}
+
+.carta-nombre {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.basico {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: inherit;
+  opacity: 0.8;
+  margin-bottom: -2px;
+}
+
+.carta-nombre h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.dark .carta-nombre h2, .dragon .carta-nombre h2, .ghost .carta-nombre h2, .poison .carta-nombre h2 {
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.7);
+}
+
+.mini .carta-nombre h2 {
+  font-size: 13px;
+}
+
+.carta-vida-tipo {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.hp-label {
+  font-size: 10px;
+  font-weight: bold;
+  color: inherit;
+}
+
+.hp-valor {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ff0000;
+  text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
+}
+
+.mini .hp-valor {
+  font-size: 14px;
+}
+
+/* Iconos de Tipo (Circulos CSS) */
+.icono-tipo {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 -2px 4px rgba(0,0,0,0.3);
+  background: #ccc;
+  display: inline-block;
+}
+
+.icono-tipo.miniatura {
+  width: 14px;
+  height: 14px;
+}
+
+.icono-tipo.grass { background: radial-gradient(circle at 30% 30%, #a4e47a, #5bb450); }
+.icono-tipo.fire { background: radial-gradient(circle at 30% 30%, #ffad70, #f26c13); }
+.icono-tipo.water { background: radial-gradient(circle at 30% 30%, #a5c6f7, #3b84df); }
+.icono-tipo.electric { background: radial-gradient(circle at 30% 30%, #fdf096, #ebcf23); }
+.icono-tipo.psychic { background: radial-gradient(circle at 30% 30%, #f6b6d9, #e54c50); }
+.icono-tipo.fighting { background: radial-gradient(circle at 30% 30%, #dc7b3c, #964212); }
+.icono-tipo.dark { background: radial-gradient(circle at 30% 30%, #888, #333); }
+.icono-tipo.steel { background: radial-gradient(circle at 30% 30%, #bcc6cc, #6b7d8b); }
+.icono-tipo.fairy { background: radial-gradient(circle at 30% 30%, #f9cbf3, #e85bbd); }
+.icono-tipo.dragon { background: radial-gradient(circle at 30% 30%, #a2b7f0, #3858be); }
+.icono-tipo.normal { background: radial-gradient(circle at 30% 30%, #ebedee, #979ea0); }
+
+/* Ilustración */
+.carta-ilustracion-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 2px 0;
+  max-height: 50%;
+}
+
+.mini .carta-ilustracion-container {
+  max-height: 60%;
+}
+
+.carta-ilustracion {
+  flex: 1;
+  background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.2));
+  border: 3px solid #dcdcdc;
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 0 15px rgba(255,255,255,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.carta-ilustracion::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%);
+  pointer-events: none;
+}
+
+.carta-ilustracion img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.4));
+  transform: scale(1.1);
+}
+
+.carta-stats-bar {
+  background: linear-gradient(90deg, #d3b454, #f4e391, #d3b454);
+  color: #333;
+  font-size: 8px;
+  font-weight: bold;
+  text-align: center;
+  padding: 2px 0;
+  margin-top: 2px;
+  border-radius: 2px;
+  border: 1px solid #b89b43;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Movimientos */
+.carta-movimientos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+  flex: 1;
+}
+
+.movimiento {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  padding-bottom: 4px;
+}
+
+.dark .movimiento, .dragon .movimiento, .ghost .movimiento, .poison .movimiento {
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.habilidad-container {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.habilidad-header {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.habilidad-label {
+  color: white;
+  background: #a40000;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: bold;
+  font-style: italic;
+  letter-spacing: 0.5px;
+}
+
+.habilidad-nombre {
+  font-weight: 800;
+  font-size: 13px;
+  color: #b00;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.8);
+}
+
+.habilidad-desc {
+  font-size: 9px;
+  margin: 2px 0 0 0;
+  line-height: 1.2;
+}
+
+.ataque-coste {
+  display: flex;
+  gap: 2px;
+  width: 40px;
+}
+
+.ataque-nombre {
+  flex: 1;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.ataque-daño {
+  font-weight: 900;
+  font-size: 16px;
+}
+
+/* Footer */
+.carta-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 4px;
+  border-top: 1px solid rgba(0,0,0,0.2);
+}
+
+.footer-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 8px;
+}
+
+.footer-item small {
+  margin-bottom: 2px;
+}
+
+.footer-item span {
+  font-weight: bold;
+  font-size: 10px;
+}
+
+.coste-retirada {
+  display: flex;
+  gap: 1px;
+}
+
+/* Botones de acción (Juego) */
+.acciones-juego {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.btn-accion {
+  flex: 1;
+  padding: 5px;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 10px;
+  cursor: pointer;
+  background: #ffcb05;
+  color: #222;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transition: background 0.2s;
+}
+
+.btn-accion:hover:not([disabled]) {
+  background: #ffdb4d;
+}
+
+.btn-accion[disabled] {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.btn-habilidad {
+  background: #3b4cca;
+  color: white;
+}
+
+.btn-habilidad:hover:not([disabled]) {
+  background: #4c5fdc;
+}

@@ -1,0 +1,149 @@
+.login-container {
+  min-height: 100vh;
+  background: repeating-linear-gradient(
+    -45deg,
+    #c85050,
+    #c85050 20px,
+    #b84141 20px,
+    #b84141 40px
+  );
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Press Start 2P', cursive;
+  padding: 25px;
+  box-sizing: border-box;
+}
+
+.login-card {
+  background: #ffffff;
+  color: #222;
+  width: 100%;
+  max-width: 480px;
+  padding: 35px 30px;
+  border: 4px solid #333;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 4px #e24a4a, inset 0 0 0 8px #ffffff, 8px 8px 0px rgba(0,0,0,0.3);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.login-card > p {
+  font-family: 'VT323', monospace;
+  color: #444;
+  font-size: 24px;
+  margin-bottom: 25px;
+  margin-top: 18px;
+  line-height: 1.2;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: 'VT323', monospace;
+}
+
+.campo {
+  text-align: left;
+}
+
+.campo label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #333;
+  font-size: 24px;
+}
+
+.campo input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 3px solid #ccc;
+  border-radius: 8px;
+  font-size: 22px;
+  font-family: 'VT323', monospace;
+  outline: none;
+  box-shadow: inset 3px 3px 0 rgba(0,0,0,0.05);
+}
+
+.campo input:focus {
+  border-color: #333;
+}
+
+.btn-principal,
+.btn-secundario,
+.btn-menu,
+.btn-volver {
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+  padding: 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 10px;
+  margin-top: 15px;
+  font-family: 'Press Start 2P', cursive;
+  border: 3px solid #333;
+  box-shadow: 4px 4px 0 #333;
+  transition: all 0.1s;
+  line-height: 1.4;
+}
+
+.btn-principal:hover:not(:disabled),
+.btn-secundario:hover,
+.btn-menu:hover,
+.btn-volver:hover {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 #333;
+}
+
+.btn-principal {
+  background: #ffcb05;
+  color: #222;
+}
+
+.btn-secundario {
+  background: #2a75bb;
+  color: white;
+}
+
+.btn-menu {
+  background: #10b981;
+  color: white;
+}
+
+.btn-volver {
+  background: #e5e7eb;
+  color: #222;
+}
+
+.mensaje {
+  background: #fef3c7;
+  color: #92400e !important;
+  padding: 12px;
+  border-radius: 8px;
+  border: 3px solid #92400e;
+  font-weight: bold;
+  margin-top: 20px;
+  margin-bottom: 8px !important;
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+}
+
+.btn-principal:disabled {
+  background: #ccc;
+  color: #777;
+  cursor: not-allowed;
+  box-shadow: 0 0 0 #333;
+  transform: translate(4px, 4px);
+}

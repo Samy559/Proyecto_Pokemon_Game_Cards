@@ -1,0 +1,107 @@
+<div 
+  class="carta-pokemon" 
+  [ngClass]="[getTipoPrincipal(), modo, seleccionada ? 'seleccionada' : '', esEnemiga ? 'enemiga' : '']"
+  (click)="onClick()"
+>
+  <div class="carta-borde">
+    <div class="carta-interior">
+      
+      <!-- HEADER -->
+      <div class="carta-header">
+        <div class="carta-nombre">
+          <span class="basico" *ngIf="modo !== 'mini'">BÁSICO</span>
+          <h2>{{ carta.nombre | titlecase }}</h2>
+        </div>
+        <div class="carta-vida-tipo">
+          <span class="hp-label">PS</span>
+          <span class="hp-valor">{{ carta.vidaActual !== undefined ? carta.vidaActual : carta.vida }}</span>
+          <div class="icono-tipo" [ngClass]="getTipoPrincipal()">
+            <!-- Iconos simulados por CSS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ILUSTRACIÓN -->
+      <div class="carta-ilustracion-container">
+        <div class="carta-ilustracion">
+          <img [src]="carta.imagen" [alt]="carta.nombre" />
+        </div>
+        <div class="carta-stats-bar" *ngIf="modo === 'completa'">
+          NO. {{ carta.id }} &nbsp; Pokémon {{ carta.tipos.join('/') | titlecase }} &nbsp; {{ carta.rareza }}
+        </div>
+        <div class="carta-stats-bar" *ngIf="modo === 'mini'">
+          ATK {{ carta.ataque }} / DEF {{ carta.defensa }}
+        </div>
+      </div>
+
+      <!-- MOVIMIENTOS / HABILIDADES (Solo Completa o Mano) -->
+      <div class="carta-movimientos" *ngIf="modo !== 'mini'">
+        <div class="movimiento habilidad-container">
+          <div class="habilidad-header">
+            <span class="habilidad-label">Habilidad</span>
+            <span class="habilidad-nombre">{{ carta.habilidad | titlecase }}</span>
+          </div>
+          <p class="habilidad-desc" *ngIf="modo === 'completa'">{{ carta.descripcion }}</p>
+        </div>
+
+        <div class="movimiento ataque-container">
+          <div class="ataque-coste">
+            <div class="icono-tipo miniatura" [ngClass]="getTipoPrincipal()"></div>
+            <div class="icono-tipo miniatura normal"></div>
+          </div>
+          <div class="ataque-nombre">Ataque</div>
+          <div class="ataque-daño">{{ carta.ataque }}</div>
+        </div>
+
+        <div class="movimiento defensa-container">
+          <div class="ataque-coste">
+            <div class="icono-tipo miniatura normal"></div>
+          </div>
+          <div class="ataque-nombre">Defensa</div>
+          <div class="ataque-daño">{{ carta.defensa }}</div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="carta-footer" *ngIf="modo === 'completa'">
+        <div class="footer-item">
+          <small>Debilidad</small>
+          <div class="icono-tipo miniatura fuego"></div><span>x2</span>
+        </div>
+        <div class="footer-item">
+          <small>Resistencia</small>
+          <div class="icono-tipo miniatura lucha"></div><span>-30</span>
+        </div>
+        <div class="footer-item">
+          <small>Retirada</small>
+          <div class="coste-retirada">
+            <div class="icono-tipo miniatura normal"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="acciones-juego" *ngIf="mostrarBotonHabilidad || mostrarBotonInvocar">
+        <button 
+          *ngIf="mostrarBotonHabilidad"
+          type="button" 
+          class="btn-accion btn-habilidad"
+          (click)="onHabilidad($event)"
+          [disabled]="deshabilitarBotonHabilidad"
+        >
+          {{ textoBotonHabilidad }}
+        </button>
+        
+        <button 
+          *ngIf="mostrarBotonInvocar"
+          type="button" 
+          class="btn-accion btn-invocar"
+          (click)="onInvocar($event)"
+          [disabled]="deshabilitarBotonInvocar"
+        >
+          {{ textoBotonInvocar }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

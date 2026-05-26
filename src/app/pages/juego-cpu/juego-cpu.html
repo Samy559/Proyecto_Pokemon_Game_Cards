@@ -1,0 +1,134 @@
+<div class="juego-container">
+  <header class="juego-header">
+    <div>
+      <h1>Duelo contra Computadora</h1>
+      <p>{{ mensaje }}</p>
+    </div>
+
+    <a routerLink="/menu" class="btn-volver">Volver al menú</a>
+  </header>
+
+  <section class="resultado-final" *ngIf="partidaTerminada">
+    <h2>{{ resultadoPartida }}</h2>
+    <p>{{ mensaje }}</p>
+
+    <small class="nota-mazo">
+      Si tienes un mazo personalizado guardado, se usará automáticamente en esta partida.
+    </small>
+
+    <button type="button" (click)="iniciarPartida()">
+      Jugar otra vez
+    </button>
+
+    <a routerLink="/menu">
+      Volver al menú
+    </a>
+  </section>
+
+  <div *ngIf="cargando" class="mensaje-cargando">
+    Cargando partida...
+  </div>
+
+  <main *ngIf="!cargando" class="tablero">
+
+    <!-- ZONA CPU -->
+    <section class="zona rival">
+      <h2>Computadora</h2>
+
+      <div class="info-jugador">
+        <span>Vida: {{ vidaCpu }}</span>
+        <span>Mazo: {{ mazoCpu.length }}</span>
+        <span>Mano: {{ manoCpu.length }}</span>
+      </div>
+
+      <h3>Campo CPU</h3>
+
+      <div class="campo">
+        <app-carta-pokemon 
+          *ngFor="let carta of campoCpu; let i = index"
+          [carta]="carta"
+          modo="mini"
+          [esEnemiga]="true"
+          (clickCarta)="atacarCartaCpu(i)">
+        </app-carta-pokemon>
+      </div>
+    </section>
+
+    <!-- ACCIONES -->
+    <section class="acciones">
+      <button
+        type="button"
+        (click)="robarCartaJugador()"
+        [disabled]="yaRobo || turno !== 'jugador' || partidaTerminada"
+      >
+        Robar carta
+      </button>
+
+      <button
+        type="button"
+        (click)="atacarDirectoCpu()"
+        [disabled]="yaAtaco || turno !== 'jugador' || partidaTerminada"
+      >
+        Atacar directo
+      </button>
+
+      <button
+        type="button"
+        (click)="finalizarTurnoJugador()"
+        [disabled]="turno !== 'jugador' || partidaTerminada"
+      >
+        Finalizar turno
+      </button>
+    </section>
+
+    <!-- ESTADO DEL TURNO -->
+    <section class="estado-turno">
+      <p>Turno actual: <strong>{{ turno }}</strong></p>
+      <p>Robo usado: <strong>{{ yaRobo ? 'Sí' : 'No' }}</strong></p>
+      <p>Invocación usada: <strong>{{ yaInvoco ? 'Sí' : 'No' }}</strong></p>
+      <p>Ataque usado: <strong>{{ yaAtaco ? 'Sí' : 'No' }}</strong></p>
+      <p>Habilidad usada: <strong>{{ yaUsoHabilidad ? 'Sí' : 'No' }}</strong></p>
+      <p>Habilidad CPU: <strong>{{ cpuUsoHabilidad ? 'Sí' : 'No' }}</strong></p>
+    </section>
+
+    <!-- ZONA JUGADOR -->
+    <section class="zona jugador">
+      <h2>Jugador</h2>
+
+      <div class="info-jugador">
+        <span>Vida: {{ vidaJugador }}</span>
+        <span>Mazo: {{ mazoJugador.length }}</span>
+        <span>Mano: {{ manoJugador.length }}</span>
+      </div>
+
+      <h3>Tu campo</h3>
+
+      <div class="campo">
+        <app-carta-pokemon 
+          *ngFor="let carta of campoJugador; let i = index"
+          [carta]="carta"
+          modo="mini"
+          [seleccionada]="cartaJugadorSeleccionada === i"
+          [mostrarBotonHabilidad]="true"
+          [deshabilitarBotonHabilidad]="yaUsoHabilidad || turno !== 'jugador' || partidaTerminada"
+          (clickCarta)="seleccionarCartaJugador(i)"
+          (clickHabilidad)="usarHabilidadJugador(i)">
+        </app-carta-pokemon>
+      </div>
+
+      <h3>Tu mano</h3>
+
+      <div class="mano">
+        <app-carta-pokemon 
+          *ngFor="let carta of manoJugador; let i = index"
+          [carta]="carta"
+          modo="mini"
+          [mostrarBotonInvocar]="true"
+          [deshabilitarBotonInvocar]="turno !== 'jugador' || yaInvoco || partidaTerminada"
+          (clickInvocar)="invocarCarta(i)">
+        </app-carta-pokemon>
+      </div>
+    </section>
+
+  </main>
+</div>
