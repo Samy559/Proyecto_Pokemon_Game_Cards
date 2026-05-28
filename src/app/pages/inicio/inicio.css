@@ -24,12 +24,12 @@
   max-width: 550px;
 }
 
-.inicio-card h1 {
-  font-size: 24px;
-  line-height: 1.5;
+.logo-inicio {
+  width: 100%;
+  max-width: 320px;
   margin-bottom: 25px;
-  color: #333;
-  text-transform: uppercase;
+  image-rendering: pixelated; /* To ensure it looks sharp retro */
+  filter: drop-shadow(4px 4px 0px rgba(0,0,0,0.4));
 }
 
 .inicio-card p {
@@ -60,6 +60,17 @@
   position: relative;
   transition: transform 0.1s;
   padding-left: 35px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.inicio-icon {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
 }
 
 .botones a::before {
