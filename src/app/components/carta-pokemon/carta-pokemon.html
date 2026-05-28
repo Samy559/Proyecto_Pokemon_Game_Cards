@@ -1,6 +1,9 @@
 <div 
   class="carta-pokemon" 
   [ngClass]="[getTipoPrincipal(), modo, seleccionada ? 'seleccionada' : '', esEnemiga ? 'enemiga' : '']"
+  [class.anim-attack]="carta.animAtacando"
+  [class.anim-damage]="carta.animRecibiendoDano"
+  [class.anim-ability]="carta.animHabilidad"
   (click)="onClick()"
 >
   <div class="carta-borde">

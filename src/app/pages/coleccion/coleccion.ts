@@ -8,7 +8,7 @@ import { CartaPokemon } from '../../components/carta-pokemon/carta-pokemon';
 @Component({
   selector: 'app-coleccion',
   standalone: true,
-  imports: [NgFor, NgIf, TitleCasePipe, RouterLink, CartaPokemon],
+  imports: [NgFor, NgIf, RouterLink, CartaPokemon],
   templateUrl: './coleccion.html',
   styleUrl: './coleccion.css'
 })

@@ -10,4 +10,9 @@ export interface Carta {
   habilidad: string;
   rareza: string;
   descripcion: string;
+  multiplicadorAtaqueTemporal?: number;
+  ignoraDefensa?: boolean;
+  animAtacando?: boolean;
+  animRecibiendoDano?: boolean;
+  animHabilidad?: boolean;
 }

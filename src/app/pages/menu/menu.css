@@ -123,15 +123,24 @@
 }
 
 .menu-opciones a {
+  display: flex;
+  align-items: center;
   text-decoration: none;
   background: transparent;
   color: #333;
-  padding: 14px 10px 14px 35px;
+  padding: 10px 10px 10px 35px;
   font-size: 12px;
   position: relative;
   transition: background 0.1s, border-radius 0.1s;
   border: 2px solid transparent;
   line-height: 1.6;
+}
+
+.menu-icon {
+  width: 28px;
+  height: 28px;
+  margin-right: 12px;
+  image-rendering: pixelated;
 }
 
 .menu-opciones a::before {

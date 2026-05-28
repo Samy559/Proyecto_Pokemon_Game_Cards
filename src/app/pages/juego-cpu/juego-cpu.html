@@ -1,11 +1,12 @@
 <div class="juego-container">
+
   <header class="juego-header">
     <div>
       <h1>Duelo contra Computadora</h1>
       <p>{{ mensaje }}</p>
     </div>
 
-    <a routerLink="/menu" class="btn-volver">Volver al menú</a>
+    <a routerLink="/menu" class="nes-btn is-error">Volver al menú</a>
   </header>
 
   <section class="resultado-final" *ngIf="partidaTerminada">
@@ -16,11 +17,11 @@
       Si tienes un mazo personalizado guardado, se usará automáticamente en esta partida.
     </small>
 
-    <button type="button" (click)="iniciarPartida()">
+    <button type="button" class="nes-btn is-success" (click)="iniciarPartida()">
       Jugar otra vez
     </button>
 
-    <a routerLink="/menu">
+    <a routerLink="/menu" class="nes-btn is-warning">
       Volver al menú
     </a>
   </section>
@@ -32,7 +33,7 @@
   <main *ngIf="!cargando" class="tablero">
 
     <!-- ZONA CPU -->
-    <section class="zona rival">
+    <section class="zona rival" [class.anim-screen-shake]="efectoShakeCpu">
       <h2>Computadora</h2>
 
       <div class="info-jugador">
@@ -55,9 +56,11 @@
     </section>
 
     <!-- ACCIONES -->
-    <section class="acciones">
+    <section class="acciones nes-container with-title is-centered">
+      <p class="title">Acciones</p>
       <button
         type="button"
+        class="nes-btn is-primary"
         (click)="robarCartaJugador()"
         [disabled]="yaRobo || turno !== 'jugador' || partidaTerminada"
       >
@@ -66,6 +69,7 @@
 
       <button
         type="button"
+        class="nes-btn is-error"
         (click)="atacarDirectoCpu()"
         [disabled]="yaAtaco || turno !== 'jugador' || partidaTerminada"
       >
@@ -74,6 +78,7 @@
 
       <button
         type="button"
+        class="nes-btn is-warning"
         (click)="finalizarTurnoJugador()"
         [disabled]="turno !== 'jugador' || partidaTerminada"
       >
@@ -82,17 +87,18 @@
     </section>
 
     <!-- ESTADO DEL TURNO -->
-    <section class="estado-turno">
-      <p>Turno actual: <strong>{{ turno }}</strong></p>
-      <p>Robo usado: <strong>{{ yaRobo ? 'Sí' : 'No' }}</strong></p>
-      <p>Invocación usada: <strong>{{ yaInvoco ? 'Sí' : 'No' }}</strong></p>
-      <p>Ataque usado: <strong>{{ yaAtaco ? 'Sí' : 'No' }}</strong></p>
-      <p>Habilidad usada: <strong>{{ yaUsoHabilidad ? 'Sí' : 'No' }}</strong></p>
-      <p>Habilidad CPU: <strong>{{ cpuUsoHabilidad ? 'Sí' : 'No' }}</strong></p>
+    <section class="estado-turno nes-container with-title">
+      <p class="title">Turno</p>
+      <p>Actual: <strong>{{ turno }}</strong></p>
+      <p *ngIf="turno === 'jugador'">Tiempo restante: <strong [class.nes-text]="true" [class.is-error]="tiempoTurno <= 10">{{ tiempoTurno }}s</strong></p>
+      <p>Robo: <strong>{{ yaRobo ? 'Sí' : 'No' }}</strong></p>
+      <p>Invocación: <strong>{{ yaInvoco ? 'Sí' : 'No' }}</strong></p>
+      <p>Ataque: <strong>{{ yaAtaco ? 'Sí' : 'No' }}</strong></p>
+      <p>Habilidad: <strong>{{ yaUsoHabilidad ? 'Sí' : 'No' }}</strong></p>
     </section>
 
     <!-- ZONA JUGADOR -->
-    <section class="zona jugador">
+    <section class="zona jugador" [class.anim-screen-shake]="efectoShakeJugador">
       <h2>Jugador</h2>
 
       <div class="info-jugador">

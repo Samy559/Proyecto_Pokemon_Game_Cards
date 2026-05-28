@@ -1,1 +1,78 @@
 /* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+html, body {
+  font-family: 'Press Start 2P', cursive;
+  margin: 0;
+  padding: 0;
+}
+
+/* DECORACIÓN POKEMON NES.CSS GLOBAL */
+.fondo-pokemon {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.15;
+}
+
+.fondo-pokemon i {
+  position: absolute;
+  transform: scale(2);
+}
+
+.poke-1 { top: 10%; left: 10%; } /* Bulbasaur */
+.poke-2 { bottom: 20%; left: 5%; transform: scale(2) scaleX(-1); } /* Charmander volteado */
+.poke-3 { top: 15%; right: 10%; } /* Squirtle */
+.poke-4 { bottom: 15%; right: 15%; transform: scale(1.5); } /* Pokeball */
+
+/* ANIMACIONES (GAME JUICE) */
+.anim-attack {
+  animation: attack-move 0.3s ease-in-out;
+  z-index: 100;
+}
+
+@keyframes attack-move {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2) translateY(-10px); }
+  100% { transform: scale(1); }
+}
+
+.anim-damage {
+  animation: damage-blink 0.5s linear;
+}
+
+@keyframes damage-blink {
+  0% { filter: drop-shadow(0 0 0px red); transform: translateX(0); }
+  20% { filter: drop-shadow(0 0 15px red); transform: translateX(-5px); }
+  40% { filter: drop-shadow(0 0 15px red); transform: translateX(5px); }
+  60% { filter: drop-shadow(0 0 15px red); transform: translateX(-5px); }
+  80% { filter: drop-shadow(0 0 15px red); transform: translateX(5px); }
+  100% { filter: drop-shadow(0 0 0px red); transform: translateX(0); }
+}
+
+.anim-ability {
+  animation: ability-glow 0.8s ease-out;
+}
+
+@keyframes ability-glow {
+  0% { filter: drop-shadow(0 0 0px #fff); transform: scale(1); }
+  50% { filter: drop-shadow(0 0 20px #fff); transform: scale(1.05); }
+  100% { filter: drop-shadow(0 0 0px #fff); transform: scale(1); }
+}
+
+.anim-screen-shake {
+  animation: screen-shake 0.5s ease-in-out;
+}
+
+@keyframes screen-shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  60% { transform: translateX(-10px); }
+  80% { transform: translateX(10px); }
+  100% { transform: translateX(0); }
+}

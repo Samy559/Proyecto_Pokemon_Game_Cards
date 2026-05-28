@@ -12,7 +12,7 @@ import { CartaPokemon } from '../../components/carta-pokemon/carta-pokemon';
 @Component({
   selector: 'app-mazo',
   standalone: true,
-  imports: [NgFor, NgIf, TitleCasePipe, RouterLink, CartaPokemon],
+  imports: [NgFor, NgIf, RouterLink, CartaPokemon],
   templateUrl: './mazo.html',
   styleUrl: './mazo.css'
 })

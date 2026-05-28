@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { NgFor, NgIf, TitleCasePipe } from '@angular/common';
+import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
+import { NgFor, NgIf, TitleCasePipe, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { PokemonService } from '../../services/pokemon';
@@ -11,16 +11,17 @@ import { HistorialPartida } from '../../models/historial-partida';
 
 import { SupabaseService } from '../../services/supabase';
 import { MazoService } from '../../services/mazo';
+import { AudioService } from '../../services/audio';
 import { CartaPokemon } from '../../components/carta-pokemon/carta-pokemon';
 
 @Component({
   selector: 'app-juego-cpu',
   standalone: true,
-  imports: [NgFor, NgIf, TitleCasePipe, RouterLink, CartaPokemon],
+  imports: [NgFor, NgIf, RouterLink, CartaPokemon],
   templateUrl: './juego-cpu.html',
   styleUrl: './juego-cpu.css'
 })
-export class JuegoCpu implements OnInit {
+export class JuegoCpu implements OnInit, OnDestroy {
   vidaJugador = 4000;
   vidaCpu = 4000;
 
@@ -38,6 +39,9 @@ export class JuegoCpu implements OnInit {
   mensaje = 'Preparando partida...';
   cargando = true;
 
+  tiempoTurno = 60;
+  temporizador: any;
+
   cartaJugadorSeleccionada: number | null = null;
 
   yaRobo = false;
@@ -46,6 +50,14 @@ export class JuegoCpu implements OnInit {
   yaUsoHabilidad = false;
 
   cpuUsoHabilidad = false;
+
+  turnosPerdidosJugador = 0;
+  turnosPerdidosCpu = 0;
+  venenoJugador = 0;
+  venenoCpu = 0;
+
+  efectoShakeJugador = false;
+  efectoShakeCpu = false;
 
   partidaTerminada = false;
   resultadoPartida = '';
@@ -56,11 +68,23 @@ export class JuegoCpu implements OnInit {
     private gameService: GameService,
     private historialService: HistorialService,
     private supabaseService: SupabaseService,
-    private mazoService: MazoService
+    private mazoService: MazoService,
+    private audioService: AudioService,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit(): void {
-    this.iniciarPartida();
+    if (isPlatformBrowser(this.platformId)) {
+      this.audioService.startBattleMusic();
+      this.iniciarPartida();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.detenerTemporizador();
+    if (isPlatformBrowser(this.platformId)) {
+      this.audioService.startMenuMusic();
+    }
   }
 
   iniciarPartida(): void {
@@ -85,6 +109,10 @@ export class JuegoCpu implements OnInit {
     this.resultadoPartida = '';
     this.historialGuardado = false;
     this.cpuUsoHabilidad = false;
+    this.turnosPerdidosJugador = 0;
+    this.turnosPerdidosCpu = 0;
+    this.venenoJugador = 0;
+    this.venenoCpu = 0;
     this.reiniciarAccionesJugador();
 
     this.pokemonService.obtenerPokemones().subscribe({
@@ -126,6 +154,7 @@ export class JuegoCpu implements OnInit {
         }
 
         this.reiniciarAccionesJugador();
+        this.iniciarTemporizador();
       },
       error: () => {
         this.cargando = false;
@@ -161,6 +190,7 @@ export class JuegoCpu implements OnInit {
 
     this.yaRobo = true;
     this.mensaje = 'Robaste una carta.';
+    this.audioService.playDrawCard();
   }
 
   invocarCarta(indice: number): void {
@@ -191,6 +221,7 @@ export class JuegoCpu implements OnInit {
 
     this.yaInvoco = true;
     this.mensaje = `Invocaste a ${carta.nombre}.`;
+    this.audioService.playBeep();
   }
 
   seleccionarCartaJugador(indice: number): void {
@@ -206,6 +237,7 @@ export class JuegoCpu implements OnInit {
 
     this.cartaJugadorSeleccionada = indice;
     this.mensaje = `Seleccionaste a ${this.campoJugador[indice].nombre} para atacar.`;
+    this.audioService.playBeep();
   }
 
   atacarCartaCpu(indiceCpu: number): void {
@@ -232,31 +264,47 @@ export class JuegoCpu implements OnInit {
     const atacante = this.campoJugador[this.cartaJugadorSeleccionada];
     const defensora = this.campoCpu[indiceCpu];
 
-    const resultado = this.gameService.calcularDañoContraCarta(
-      atacante,
-      defensora
-    );
-
-    defensora.vidaActual = resultado.vidaDefensora;
-    atacante.vidaActual = resultado.vidaAtacante;
-
-    this.mensaje = resultado.mensaje;
-
-    if (defensora.vidaActual <= 0) {
-      this.descarteCpu.push(defensora);
-      this.campoCpu.splice(indiceCpu, 1);
-      this.mensaje += ` ${defensora.nombre} fue destruido.`;
-    }
-
-    if (atacante.vidaActual <= 0) {
-      this.descarteJugador.push(atacante);
-      this.campoJugador.splice(this.cartaJugadorSeleccionada, 1);
-      this.mensaje += ` ${atacante.nombre} fue destruido.`;
-    }
-
     this.yaAtaco = true;
     this.cartaJugadorSeleccionada = null;
-    this.verificarGanador();
+    this.audioService.playAttack();
+
+    atacante.animAtacando = true;
+    defensora.animRecibiendoDano = true;
+
+    setTimeout(() => {
+      atacante.animAtacando = false;
+      defensora.animRecibiendoDano = false;
+
+      const resultado = this.gameService.calcularDañoContraCarta(
+        atacante,
+        defensora
+      );
+
+      defensora.vidaActual = resultado.vidaDefensora;
+      atacante.vidaActual = resultado.vidaAtacante;
+
+      this.mensaje = resultado.mensaje;
+
+      if (defensora.vidaActual <= 0) {
+        const idx = this.campoCpu.indexOf(defensora);
+        if (idx > -1) {
+          this.descarteCpu.push(defensora);
+          this.campoCpu.splice(idx, 1);
+        }
+        this.mensaje += ` ${defensora.nombre} fue destruido.`;
+      }
+
+      if (atacante.vidaActual <= 0) {
+        const idx = this.campoJugador.indexOf(atacante);
+        if (idx > -1) {
+          this.descarteJugador.push(atacante);
+          this.campoJugador.splice(idx, 1);
+        }
+        this.mensaje += ` ${atacante.nombre} fue destruido.`;
+      }
+
+      this.verificarGanador();
+    }, 500);
   }
 
   atacarDirectoCpu(): void {
@@ -286,14 +334,25 @@ export class JuegoCpu implements OnInit {
     }
 
     const atacante = this.campoJugador[this.cartaJugadorSeleccionada];
-    const daño = this.gameService.calcularDañoDirecto(atacante);
-
-    this.vidaCpu -= daño;
-    this.mensaje = `${atacante.nombre} atacó directamente y causó ${daño} de daño.`;
-
+    
     this.yaAtaco = true;
     this.cartaJugadorSeleccionada = null;
-    this.verificarGanador();
+    this.audioService.playAttack();
+
+    atacante.animAtacando = true;
+    this.efectoShakeCpu = true;
+
+    setTimeout(() => {
+      atacante.animAtacando = false;
+      this.efectoShakeCpu = false;
+
+      const daño = this.gameService.calcularDañoDirecto(atacante);
+
+      this.vidaCpu -= daño;
+      this.mensaje = `${atacante.nombre} atacó directamente y causó ${daño} de daño.`;
+
+      this.verificarGanador();
+    }, 500);
   }
 
   usarHabilidadJugador(indice: number): void {
@@ -315,50 +374,57 @@ export class JuegoCpu implements OnInit {
     const carta = this.campoJugador[indice];
     const tipoPrincipal = carta.tipos[0];
 
-    if (tipoPrincipal === 'grass') {
-      carta.vidaActual += 20;
-
-      if (carta.vidaActual > carta.vida) {
-        carta.vidaActual = carta.vida;
-      }
-
-      this.mensaje = `${carta.nombre} usó habilidad de planta y recuperó 20 puntos de vida.`;
-    } else if (tipoPrincipal === 'fire') {
-      carta.ataque += 10;
-      this.mensaje = `${carta.nombre} usó habilidad de fuego y aumentó su ataque en 10.`;
-    } else if (tipoPrincipal === 'water') {
-      if (this.campoCpu.length === 0) {
-        this.mensaje = 'No hay cartas rivales para reducir defensa.';
-        return;
-      }
-
-      const cartaRival = this.campoCpu[0];
-      cartaRival.defensa -= 10;
-
-      if (cartaRival.defensa < 0) {
-        cartaRival.defensa = 0;
-      }
-
-      this.mensaje = `${carta.nombre} usó habilidad de agua y redujo la defensa de ${cartaRival.nombre}.`;
-    } else if (tipoPrincipal === 'electric') {
-      const daño = 200;
-      this.vidaCpu -= daño;
-      this.mensaje = `${carta.nombre} usó habilidad eléctrica y causó ${daño} de daño directo a la CPU.`;
-      this.verificarGanador();
-    } else {
-      if (this.mazoJugador.length === 0) {
-        this.mensaje = 'No tienes cartas en el mazo para robar.';
-        return;
-      }
-
-      const robo = this.gameService.robarCartas(this.mazoJugador, 1);
-      this.manoJugador = [...this.manoJugador, ...robo.cartasRobadas];
-      this.mazoJugador = robo.mazoRestante;
-
-      this.mensaje = `${carta.nombre} usó una habilidad básica y robaste una carta extra.`;
-    }
-
     this.yaUsoHabilidad = true;
+    this.audioService.playBeep();
+
+    carta.animHabilidad = true;
+
+    setTimeout(() => {
+      carta.animHabilidad = false;
+
+      if (tipoPrincipal === 'fire') {
+        carta.multiplicadorAtaqueTemporal = 2;
+        this.mensaje = `${carta.nombre} usó habilidad de fuego y duplicó su ataque este turno.`;
+      } else if (tipoPrincipal === 'grass') {
+        this.vidaJugador += 1000;
+        if (this.vidaJugador > 4000) this.vidaJugador = 4000;
+        this.mensaje = `${carta.nombre} usó habilidad de planta y te curó 1000 puntos de vida.`;
+      } else if (tipoPrincipal === 'water') {
+        if (this.campoCpu.length === 0) {
+          this.mensaje = 'No hay cartas rivales para reducir defensa.';
+          return;
+        }
+        this.campoCpu.forEach(c => {
+          c.defensa -= 20;
+          if (c.defensa < 0) c.defensa = 0;
+        });
+        this.mensaje = `${carta.nombre} usó habilidad de agua y redujo la defensa de todas las cartas enemigas en 20.`;
+      } else if (tipoPrincipal === 'electric') {
+        this.vidaCpu -= 500;
+        this.mensaje = `${carta.nombre} usó habilidad eléctrica y causó 500 de daño directo a la CPU.`;
+        this.efectoShakeCpu = true;
+        setTimeout(() => this.efectoShakeCpu = false, 500);
+        this.verificarGanador();
+      } else if (tipoPrincipal === 'psychic') {
+        this.turnosPerdidosCpu = 1;
+        this.mensaje = `${carta.nombre} usó habilidad psíquica. ¡La CPU perderá su próximo turno!`;
+      } else if (tipoPrincipal === 'poison') {
+        this.venenoCpu = 300;
+        this.mensaje = `${carta.nombre} usó habilidad de veneno. ¡La CPU perderá 300 PV cada turno!`;
+      } else if (tipoPrincipal === 'fighting') {
+        carta.ignoraDefensa = true;
+        this.mensaje = `${carta.nombre} usó habilidad de lucha e ignorará la defensa en su próximo ataque.`;
+      } else {
+        if (this.mazoJugador.length === 0) {
+          this.mensaje = 'No tienes cartas en el mazo para robar.';
+          return;
+        }
+        const robo = this.gameService.robarCartas(this.mazoJugador, 1);
+        this.manoJugador = [...this.manoJugador, ...robo.cartasRobadas];
+        this.mazoJugador = robo.mazoRestante;
+        this.mensaje = `${carta.nombre} usó una habilidad especial y robaste una carta extra.`;
+      }
+    }, 800);
   }
 
   finalizarTurnoJugador(): void {
@@ -372,8 +438,16 @@ export class JuegoCpu implements OnInit {
       return;
     }
 
+    this.detenerTemporizador();
+
+    this.campoJugador.forEach(c => {
+      c.multiplicadorAtaqueTemporal = 1;
+      c.ignoraDefensa = false;
+    });
+
     this.turno = 'cpu';
     this.mensaje = 'Turno de la computadora...';
+    this.audioService.playBeep();
 
     setTimeout(() => {
       this.turnoCpu();
@@ -382,6 +456,26 @@ export class JuegoCpu implements OnInit {
 
   turnoCpu(): void {
     if (this.partidaTerminada) {
+      return;
+    }
+
+    if (this.venenoCpu > 0) {
+      this.vidaCpu -= this.venenoCpu;
+      this.mensaje = `La CPU sufre ${this.venenoCpu} de daño por veneno.`;
+      this.verificarGanador();
+      if (this.partidaTerminada) return;
+    }
+
+    if (this.turnosPerdidosCpu > 0) {
+      this.turnosPerdidosCpu--;
+      this.mensaje += ` La CPU está confundida y pierde su turno.`;
+      this.campoCpu.forEach(c => {
+        c.multiplicadorAtaqueTemporal = 1;
+        c.ignoraDefensa = false;
+      });
+      setTimeout(() => {
+        this.iniciarTurnoJugador();
+      }, 1500);
       return;
     }
 
@@ -399,11 +493,62 @@ export class JuegoCpu implements OnInit {
       this.atacarCpu();
 
       if (!this.partidaTerminada) {
-        this.turno = 'jugador';
-        this.reiniciarAccionesJugador();
-        this.mensaje += ' Es tu turno.';
+        this.campoCpu.forEach(c => {
+          c.multiplicadorAtaqueTemporal = 1;
+          c.ignoraDefensa = false;
+        });
+        this.iniciarTurnoJugador();
       }
-    }, 1000);
+    }, 1500);
+  }
+
+  iniciarTurnoJugador(): void {
+    this.turno = 'jugador';
+    this.reiniciarAccionesJugador();
+
+    if (this.venenoJugador > 0) {
+      this.vidaJugador -= this.venenoJugador;
+      this.mensaje = `Sufres ${this.venenoJugador} de daño por veneno.`;
+      this.verificarGanador();
+      if (this.partidaTerminada) return;
+    }
+
+    if (this.turnosPerdidosJugador > 0) {
+      this.turnosPerdidosJugador--;
+      this.mensaje += ` ¡Estás confundido y pierdes tu turno!`;
+      setTimeout(() => {
+        this.finalizarTurnoJugador();
+      }, 1500);
+      return;
+    }
+
+    this.mensaje += ' Es tu turno.';
+    this.iniciarTemporizador();
+  }
+
+  iniciarTemporizador(): void {
+    this.detenerTemporizador();
+    this.tiempoTurno = 60;
+    if (isPlatformBrowser(this.platformId)) {
+      this.temporizador = setInterval(() => {
+        if (this.partidaTerminada || this.turno !== 'jugador') {
+          this.detenerTemporizador();
+          return;
+        }
+        this.tiempoTurno--;
+        if (this.tiempoTurno <= 0) {
+          this.mensaje = '¡Tiempo agotado! Tu turno terminó.';
+          this.finalizarTurnoJugador();
+        }
+      }, 1000);
+    }
+  }
+
+  detenerTemporizador(): void {
+    if (this.temporizador) {
+      clearInterval(this.temporizador);
+      this.temporizador = null;
+    }
   }
 
   robarCartaCpu(): void {
@@ -461,44 +606,38 @@ export class JuegoCpu implements OnInit {
     const carta = this.campoCpu[indiceCarta];
     const tipoPrincipal = carta.tipos[0];
 
-    if (tipoPrincipal === 'grass') {
-      carta.vidaActual += 20;
-
-      if (carta.vidaActual > carta.vida) {
-        carta.vidaActual = carta.vida;
-      }
-
-      this.mensaje = `CPU: ${carta.nombre} recuperó 20 puntos de vida.`;
-    } else if (tipoPrincipal === 'fire') {
-      carta.ataque += 10;
-      this.mensaje = `CPU: ${carta.nombre} aumentó su ataque en 10.`;
+    if (tipoPrincipal === 'fire') {
+      carta.multiplicadorAtaqueTemporal = 2;
+      this.mensaje = `CPU: ${carta.nombre} duplicó su ataque este turno.`;
+    } else if (tipoPrincipal === 'grass') {
+      this.vidaCpu += 1000;
+      if (this.vidaCpu > 4000) this.vidaCpu = 4000;
+      this.mensaje = `CPU: ${carta.nombre} curó 1000 puntos de vida.`;
     } else if (tipoPrincipal === 'water') {
-      if (this.campoJugador.length === 0) {
-        return;
-      }
-
-      const cartaRival = this.campoJugador[0];
-      cartaRival.defensa -= 10;
-
-      if (cartaRival.defensa < 0) {
-        cartaRival.defensa = 0;
-      }
-
-      this.mensaje = `CPU: ${carta.nombre} redujo la defensa de ${cartaRival.nombre}.`;
+      if (this.campoJugador.length === 0) return;
+      this.campoJugador.forEach(c => {
+        c.defensa -= 20;
+        if (c.defensa < 0) c.defensa = 0;
+      });
+      this.mensaje = `CPU: ${carta.nombre} redujo la defensa de todas tus cartas en 20.`;
     } else if (tipoPrincipal === 'electric') {
-      const daño = 200;
-      this.vidaJugador -= daño;
-      this.mensaje = `CPU: ${carta.nombre} causó ${daño} de daño directo.`;
+      this.vidaJugador -= 500;
+      this.mensaje = `CPU: ${carta.nombre} causó 500 de daño directo.`;
       this.verificarGanador();
+    } else if (tipoPrincipal === 'psychic') {
+      this.turnosPerdidosJugador = 1;
+      this.mensaje = `CPU: ${carta.nombre} usó psíquico. ¡Perderás tu próximo turno!`;
+    } else if (tipoPrincipal === 'poison') {
+      this.venenoJugador = 300;
+      this.mensaje = `CPU: ${carta.nombre} usó veneno. ¡Perderás 300 PV cada turno!`;
+    } else if (tipoPrincipal === 'fighting') {
+      carta.ignoraDefensa = true;
+      this.mensaje = `CPU: ${carta.nombre} ignorará la defensa en su próximo ataque.`;
     } else {
-      if (this.mazoCpu.length === 0) {
-        return;
-      }
-
+      if (this.mazoCpu.length === 0) return;
       const robo = this.gameService.robarCartas(this.mazoCpu, 1);
       this.manoCpu = [...this.manoCpu, ...robo.cartasRobadas];
       this.mazoCpu = robo.mazoRestante;
-
       this.mensaje = `CPU: ${carta.nombre} usó habilidad básica y robó una carta.`;
     }
 
@@ -522,12 +661,19 @@ export class JuegoCpu implements OnInit {
     const atacante = this.campoCpu[indiceAtacante];
 
     if (this.campoJugador.length === 0) {
-      const daño = this.gameService.calcularDañoDirecto(atacante);
-      this.vidaJugador -= daño;
+      atacante.animAtacando = true;
+      this.efectoShakeJugador = true;
 
-      this.mensaje = `La computadora atacó directamente con ${atacante.nombre} y causó ${daño} de daño.`;
+      setTimeout(() => {
+        atacante.animAtacando = false;
+        this.efectoShakeJugador = false;
 
-      this.verificarGanador();
+        const daño = this.gameService.calcularDañoDirecto(atacante);
+        this.vidaJugador -= daño;
+
+        this.mensaje = `La computadora atacó directamente con ${atacante.nombre} y causó ${daño} de daño.`;
+        this.verificarGanador();
+      }, 500);
       return;
     }
 
@@ -540,30 +686,44 @@ export class JuegoCpu implements OnInit {
     }
 
     const defensora = this.campoJugador[indiceDefensora];
+    
+    atacante.animAtacando = true;
+    defensora.animRecibiendoDano = true;
 
-    const resultado = this.gameService.calcularDañoContraCarta(
-      atacante,
-      defensora
-    );
+    setTimeout(() => {
+      atacante.animAtacando = false;
+      defensora.animRecibiendoDano = false;
 
-    defensora.vidaActual = resultado.vidaDefensora;
-    atacante.vidaActual = resultado.vidaAtacante;
+      const resultado = this.gameService.calcularDañoContraCarta(
+        atacante,
+        defensora
+      );
 
-    this.mensaje = `CPU: ${resultado.mensaje}`;
+      defensora.vidaActual = resultado.vidaDefensora;
+      atacante.vidaActual = resultado.vidaAtacante;
 
-    if (defensora.vidaActual <= 0) {
-      this.descarteJugador.push(defensora);
-      this.campoJugador.splice(indiceDefensora, 1);
-      this.mensaje += ` ${defensora.nombre} fue destruido.`;
-    }
+      this.mensaje = `CPU: ${resultado.mensaje}`;
 
-    if (atacante.vidaActual <= 0) {
-      this.descarteCpu.push(atacante);
-      this.campoCpu.splice(indiceAtacante, 1);
-      this.mensaje += ` ${atacante.nombre} fue destruido.`;
-    }
+      if (defensora.vidaActual <= 0) {
+        const idx = this.campoJugador.indexOf(defensora);
+        if (idx > -1) {
+          this.descarteJugador.push(defensora);
+          this.campoJugador.splice(idx, 1);
+        }
+        this.mensaje += ` ${defensora.nombre} fue destruido.`;
+      }
 
-    this.verificarGanador();
+      if (atacante.vidaActual <= 0) {
+        const idx = this.campoCpu.indexOf(atacante);
+        if (idx > -1) {
+          this.descarteCpu.push(atacante);
+          this.campoCpu.splice(idx, 1);
+        }
+        this.mensaje += ` ${atacante.nombre} fue destruido.`;
+      }
+
+      this.verificarGanador();
+    }, 500);
   }
 
   verificarGanador(): void {
@@ -573,6 +733,7 @@ export class JuegoCpu implements OnInit {
       this.resultadoPartida = 'Derrota';
       this.turno = 'cpu';
       this.mensaje = 'Perdiste la partida. Tus puntos de vida llegaron a 0.';
+      this.audioService.playDefeat();
       this.guardarResultadoLocal();
       return;
     }
@@ -583,6 +744,7 @@ export class JuegoCpu implements OnInit {
       this.resultadoPartida = 'Victoria';
       this.turno = 'cpu';
       this.mensaje = 'Ganaste la partida. La CPU llegó a 0 puntos de vida.';
+      this.audioService.playVictory();
       this.guardarResultadoLocal();
       return;
     }
@@ -596,6 +758,7 @@ export class JuegoCpu implements OnInit {
       this.resultadoPartida = 'Derrota';
       this.turno = 'cpu';
       this.mensaje = 'Perdiste porque te quedaste sin cartas disponibles.';
+      this.audioService.playDefeat();
       this.guardarResultadoLocal();
       return;
     }
@@ -609,6 +772,7 @@ export class JuegoCpu implements OnInit {
       this.resultadoPartida = 'Victoria';
       this.turno = 'cpu';
       this.mensaje = 'Ganaste porque la CPU se quedó sin cartas disponibles.';
+      this.audioService.playVictory();
       this.guardarResultadoLocal();
       return;
     }

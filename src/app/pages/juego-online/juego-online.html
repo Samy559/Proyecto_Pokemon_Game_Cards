@@ -52,7 +52,7 @@
 
   <main *ngIf="partidaActual && !partidaTerminada" class="tablero">
     <!-- ZONA RIVAL -->
-    <section class="zona rival">
+    <section class="zona rival" [class.anim-screen-shake]="efectoShakeRival">
       <h2>Rival ({{ soyJugador1() ? 'Jugador 2' : 'Jugador 1' }})</h2>
       <div class="info-jugador">
         <span>Vida: {{ vidaRival }}</span>
@@ -104,19 +104,21 @@
     </section>
 
     <!-- ESTADO DEL TURNO -->
-    <section class="estado-turno">
+    <section class="estado-turno nes-container with-title">
+      <p class="title">Turno</p>
       <p>Sala: <strong>{{ partidaActual.codigo_sala }}</strong></p>
       <p>Rol: <strong>{{ obtenerMiRol() }}</strong></p>
       <hr>
-      <p>Turno: <strong [style.color]="esMiTurno() ? '#78c850' : '#e04444'">{{ esMiTurno() ? 'Tuyo' : 'Del Rival' }}</strong></p>
-      <p>Robo usado: <strong>{{ yaRobo ? 'Sí' : 'No' }}</strong></p>
-      <p>Invocación usada: <strong>{{ yaInvoco ? 'Sí' : 'No' }}</strong></p>
-      <p>Ataque usado: <strong>{{ yaAtaco ? 'Sí' : 'No' }}</strong></p>
-      <p>Habilidad usada: <strong>{{ yaUsoHabilidad ? 'Sí' : 'No' }}</strong></p>
+      <p>Actual: <strong>{{ turno === 'jugador' ? 'Tú' : 'Rival' }}</strong></p>
+      <p *ngIf="turno === 'jugador'">Tiempo restante: <strong [class.nes-text]="true" [class.is-error]="tiempoTurno <= 10">{{ tiempoTurno }}s</strong></p>
+      <p>Robo: <strong>{{ yaRobo ? 'Sí' : 'No' }}</strong></p>
+      <p>Invocación: <strong>{{ yaInvoco ? 'Sí' : 'No' }}</strong></p>
+      <p>Ataque: <strong>{{ yaAtaco ? 'Sí' : 'No' }}</strong></p>
+      <p>Habilidad: <strong>{{ yaUsoHabilidad ? 'Sí' : 'No' }}</strong></p>
     </section>
 
     <!-- ZONA JUGADOR -->
-    <section class="zona jugador">
+    <section class="zona jugador" [class.anim-screen-shake]="efectoShakeJugador">
       <h2>Tú ({{ obtenerMiRol() }})</h2>
       <div class="info-jugador">
         <span>Vida: {{ vidaJugador }}</span>

@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { NgIf } from '@angular/common';
+import { NgIf, isPlatformBrowser } from '@angular/common';
 
 import { SupabaseService } from '../../services/supabase';
 
@@ -18,15 +18,20 @@ export class Menu implements OnInit {
   totalPartidas = 0;
 
   sesionActiva = false;
-  mensajeSesion = 'No has iniciado sesión.';
+  mensajeSesion = 'Cargando sesión...';
 
   constructor(
     private supabaseService: SupabaseService,
-    private router: Router
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit(): void {
-    this.cargarUsuario();
+    if (isPlatformBrowser(this.platformId)) {
+      this.cargarUsuario();
+    } else {
+      this.mensajeSesion = 'Cargando sesión...';
+    }
   }
 
   async cargarUsuario(): Promise<void> {

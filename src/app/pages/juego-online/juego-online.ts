@@ -1,5 +1,5 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { NgFor, NgIf, DatePipe, TitleCasePipe } from '@angular/common';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angular/core';
+import { NgFor, NgIf, DatePipe, TitleCasePipe, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -8,6 +8,7 @@ import { SupabaseService } from '../../services/supabase';
 import { PokemonService } from '../../services/pokemon';
 import { GameService } from '../../services/game';
 import { MazoService } from '../../services/mazo';
+import { AudioService } from '../../services/audio';
 import { Carta } from '../../models/carta';
 import { CartaPokemon } from '../../components/carta-pokemon/carta-pokemon';
 
@@ -20,12 +21,14 @@ interface JugadorState {
   yaInvoco: boolean;
   yaAtaco: boolean;
   yaUsoHabilidad: boolean;
+  turnosPerdidos: number;
+  nivelVeneno: number;
 }
 
 @Component({
   selector: 'app-juego-online',
   standalone: true,
-  imports: [NgFor, NgIf, DatePipe, FormsModule, RouterLink, TitleCasePipe, CartaPokemon],
+  imports: [NgFor, NgIf, FormsModule, RouterLink, CartaPokemon],
   templateUrl: './juego-online.html',
   styleUrl: './juego-online.css'
 })
@@ -56,10 +59,21 @@ export class JuegoOnline implements OnInit, OnDestroy {
   turno: 'jugador' | 'rival' = 'rival';
   cartaJugadorSeleccionada: number | null = null;
 
+  tiempoTurno = 60;
+  temporizador: any;
+
   yaRobo = false;
   yaInvoco = false;
   yaAtaco = false;
   yaUsoHabilidad = false;
+
+  turnosPerdidosJugador = 0;
+  turnosPerdidosRival = 0;
+  venenoJugador = 0;
+  venenoRival = 0;
+
+  efectoShakeJugador = false;
+  efectoShakeRival = false;
 
   partidaTerminada = false;
   resultadoPartida = '';
@@ -69,23 +83,34 @@ export class JuegoOnline implements OnInit, OnDestroy {
     private pokemonService: PokemonService,
     private gameService: GameService,
     private mazoService: MazoService,
-    private cdr: ChangeDetectorRef
+    private audioService: AudioService,
+    private cdr: ChangeDetectorRef,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.usuarioActualId = await this.supabaseService.obtenerIdUsuarioActual();
-    if (!this.usuarioActualId) {
-      this.sesionActiva = false;
-      this.mensaje = 'Debes iniciar sesión para usar el modo online.';
-      return;
+    if (isPlatformBrowser(this.platformId)) {
+      this.audioService.startBattleMusic();
+      this.usuarioActualId = await this.supabaseService.obtenerIdUsuarioActual();
+      if (!this.usuarioActualId) {
+        this.sesionActiva = false;
+        this.mensaje = 'Debes iniciar sesión para usar el modo online.';
+        return;
+      }
+      this.sesionActiva = true;
+      this.cargarPartidas();
+    } else {
+      this.mensaje = 'Cargando...';
     }
-    this.sesionActiva = true;
-    this.cargarPartidas();
   }
 
   ngOnDestroy(): void {
-    if (this.partidaActual) {
-      this.supabaseService.desuscribirseDePartidaOnline(this.partidaActual.codigo_sala);
+    this.detenerTemporizador();
+    if (isPlatformBrowser(this.platformId)) {
+      this.audioService.startMenuMusic();
+      if (this.partidaActual) {
+        this.supabaseService.desuscribirseDePartidaOnline(this.partidaActual.codigo_sala);
+      }
     }
   }
 
@@ -145,8 +170,18 @@ export class JuegoOnline implements OnInit, OnDestroy {
         this.cdr.detectChanges();
         return;
       }
+      const viejoTurno = this.partidaActual.turno_actual;
       this.partidaActual = payload.new;
       this.sincronizarEstadoLocal();
+
+      if (viejoTurno !== this.partidaActual.turno_actual) {
+        if (this.esMiTurno()) {
+          this.iniciarTemporizador();
+        } else {
+          this.detenerTemporizador();
+        }
+      }
+
       this.cdr.detectChanges();
     });
 
@@ -155,6 +190,9 @@ export class JuegoOnline implements OnInit, OnDestroy {
       this.inicializarMiEstadoEnPartida(this.partidaActual.id);
     } else {
       this.sincronizarEstadoLocal();
+      if (this.esMiTurno()) {
+        this.iniciarTemporizador();
+      }
     }
   }
 
@@ -189,7 +227,9 @@ export class JuegoOnline implements OnInit, OnDestroy {
       yaRobo: false,
       yaInvoco: false,
       yaAtaco: false,
-      yaUsoHabilidad: false
+      yaUsoHabilidad: false,
+      turnosPerdidos: 0,
+      nivelVeneno: 0
     };
 
     // Usamos SIEMPRE el estado más reciente de partidaActual para no sobreescribir al rival si ya inicializó
@@ -201,6 +241,11 @@ export class JuegoOnline implements OnInit, OnDestroy {
     await this.supabaseService.actualizarEstadoJuegoPartidaOnline(partidaId, {
       estado_juego: estadoJuego
     });
+    
+    if (this.esMiTurno()) {
+      this.iniciarTemporizador();
+    }
+    
     this.mensaje = 'Mazo preparado. ¡A jugar!';
   }
 
@@ -226,9 +271,10 @@ export class JuegoOnline implements OnInit, OnDestroy {
       this.campoJugador = estado[miClave].campo || [];
       this.descarteJugador = estado[miClave].descarte || [];
       this.yaRobo = estado[miClave].yaRobo;
-      this.yaInvoco = estado[miClave].yaInvoco;
       this.yaAtaco = estado[miClave].yaAtaco;
       this.yaUsoHabilidad = estado[miClave].yaUsoHabilidad;
+      this.turnosPerdidosJugador = estado[miClave].turnosPerdidos || 0;
+      this.venenoJugador = estado[miClave].nivelVeneno || 0;
       this.vidaJugador = this.soyJugador1() ? this.partidaActual.vida_jugador_1 : this.partidaActual.vida_jugador_2;
     }
 
@@ -237,6 +283,8 @@ export class JuegoOnline implements OnInit, OnDestroy {
       this.manoRival = estado[rivalClave].mano || [];
       this.campoRival = estado[rivalClave].campo || [];
       this.descarteRival = estado[rivalClave].descarte || [];
+      this.turnosPerdidosRival = estado[rivalClave].turnosPerdidos || 0;
+      this.venenoRival = estado[rivalClave].nivelVeneno || 0;
       this.vidaRival = this.soyJugador1() ? this.partidaActual.vida_jugador_2 : this.partidaActual.vida_jugador_1;
     }
 
@@ -265,7 +313,9 @@ export class JuegoOnline implements OnInit, OnDestroy {
       yaRobo: this.yaRobo,
       yaInvoco: this.yaInvoco,
       yaAtaco: this.yaAtaco,
-      yaUsoHabilidad: this.yaUsoHabilidad
+      yaUsoHabilidad: this.yaUsoHabilidad,
+      turnosPerdidos: this.turnosPerdidosJugador,
+      nivelVeneno: this.venenoJugador
     };
 
     estado[rivalClave] = {
@@ -276,7 +326,9 @@ export class JuegoOnline implements OnInit, OnDestroy {
       yaRobo: estado[rivalClave]?.yaRobo || false,
       yaInvoco: estado[rivalClave]?.yaInvoco || false,
       yaAtaco: estado[rivalClave]?.yaAtaco || false,
-      yaUsoHabilidad: estado[rivalClave]?.yaUsoHabilidad || false
+      yaUsoHabilidad: estado[rivalClave]?.yaUsoHabilidad || false,
+      turnosPerdidos: this.turnosPerdidosRival,
+      nivelVeneno: this.venenoRival
     };
 
     const cambios: any = { estado_juego: estado };
@@ -346,27 +398,40 @@ export class JuegoOnline implements OnInit, OnDestroy {
 
     const atacante = this.campoJugador[this.cartaJugadorSeleccionada];
     const defensora = this.campoRival[indiceRival];
-    const resultado = this.gameService.calcularDañoContraCarta(atacante, defensora);
-
-    defensora.vidaActual = resultado.vidaDefensora;
-    atacante.vidaActual = resultado.vidaAtacante;
-    this.mensaje = resultado.mensaje;
-
-    if (defensora.vidaActual <= 0) {
-      this.descarteRival.push(defensora);
-      this.campoRival.splice(indiceRival, 1);
-      this.mensaje += ` Destruiste a ${defensora.nombre}.`;
-    }
-    if (atacante.vidaActual <= 0) {
-      this.descarteJugador.push(atacante);
-      this.campoJugador.splice(this.cartaJugadorSeleccionada, 1);
-      this.mensaje += ` Tu ${atacante.nombre} fue destruido.`;
-    }
 
     this.yaAtaco = true;
     this.cartaJugadorSeleccionada = null;
-    await this.propagarEstado();
-    this.verificarGanador();
+
+    atacante.animAtacando = true;
+    defensora.animRecibiendoDano = true;
+
+    setTimeout(async () => {
+      atacante.animAtacando = false;
+      defensora.animRecibiendoDano = false;
+
+      const resultado = this.gameService.calcularDañoContraCarta(atacante, defensora);
+
+      defensora.vidaActual = resultado.vidaDefensora;
+      atacante.vidaActual = resultado.vidaAtacante;
+      this.mensaje = resultado.mensaje;
+
+      if (defensora.vidaActual <= 0) {
+        this.descarteRival.push(defensora);
+        this.campoRival.splice(indiceRival, 1);
+        this.mensaje += ` Destruiste a ${defensora.nombre}.`;
+      }
+      if (atacante.vidaActual <= 0) {
+        const idxAtacante = this.campoJugador.indexOf(atacante);
+        if (idxAtacante > -1) {
+          this.descarteJugador.push(atacante);
+          this.campoJugador.splice(idxAtacante, 1);
+        }
+        this.mensaje += ` Tu ${atacante.nombre} fue destruido.`;
+      }
+
+      await this.propagarEstado();
+      this.verificarGanador();
+    }, 500);
   }
 
   async atacarDirectoRival(): Promise<void> {
@@ -377,14 +442,24 @@ export class JuegoOnline implements OnInit, OnDestroy {
     }
 
     const atacante = this.campoJugador[this.cartaJugadorSeleccionada];
-    const daño = this.gameService.calcularDañoDirecto(atacante);
-    this.vidaRival -= daño;
-    this.mensaje = `Atacaste directo con ${atacante.nombre} por ${daño} de daño.`;
     
     this.yaAtaco = true;
     this.cartaJugadorSeleccionada = null;
-    await this.propagarEstado();
-    this.verificarGanador();
+
+    atacante.animAtacando = true;
+    this.efectoShakeRival = true;
+
+    setTimeout(async () => {
+      atacante.animAtacando = false;
+      this.efectoShakeRival = false;
+
+      const daño = this.gameService.calcularDañoDirecto(atacante);
+      this.vidaRival -= daño;
+      this.mensaje = `Atacaste directo con ${atacante.nombre} por ${daño} de daño.`;
+      
+      await this.propagarEstado();
+      this.verificarGanador();
+    }, 500);
   }
 
   async usarHabilidadJugador(indice: number): Promise<void> {
@@ -393,40 +468,92 @@ export class JuegoOnline implements OnInit, OnDestroy {
     const carta = this.campoJugador[indice];
     const tipoPrincipal = carta.tipos[0];
 
-    if (tipoPrincipal === 'grass') {
-      carta.vidaActual = Math.min(carta.vida, carta.vidaActual + 20);
-      this.mensaje = `${carta.nombre} se curó 20 puntos de vida.`;
-    } else if (tipoPrincipal === 'fire') {
-      carta.ataque += 10;
-      this.mensaje = `${carta.nombre} aumentó su ataque en 10.`;
-    } else if (tipoPrincipal === 'water') {
-      if (this.campoRival.length > 0) {
-        const cartaRival = this.campoRival[0];
-        cartaRival.defensa = Math.max(0, cartaRival.defensa - 10);
-        this.mensaje = `Redujiste la defensa de ${cartaRival.nombre}.`;
-      } else {
-        this.mensaje = 'No hay cartas rivales.';
-        return;
-      }
-    } else if (tipoPrincipal === 'electric') {
-      this.vidaRival -= 200;
-      this.mensaje = `Causaste 200 de daño eléctrico directo al rival.`;
-      this.verificarGanador();
-    } else {
-      if (this.mazoJugador.length > 0) {
-        const robo = this.gameService.robarCartas(this.mazoJugador, 1);
-        this.manoJugador = [...this.manoJugador, ...robo.cartasRobadas];
-        this.mazoJugador = robo.mazoRestante;
-        this.mensaje = `Robaste una carta extra.`;
-      }
-    }
     this.yaUsoHabilidad = true;
-    await this.propagarEstado();
+    carta.animHabilidad = true;
+
+    setTimeout(async () => {
+      carta.animHabilidad = false;
+
+      if (tipoPrincipal === 'fire') {
+        carta.multiplicadorAtaqueTemporal = 2;
+        this.mensaje = `${carta.nombre} duplicó su ataque este turno.`;
+      } else if (tipoPrincipal === 'grass') {
+        this.vidaJugador += 1000;
+        if (this.vidaJugador > 4000) this.vidaJugador = 4000;
+        this.mensaje = `${carta.nombre} te curó 1000 puntos de vida.`;
+      } else if (tipoPrincipal === 'water') {
+        if (this.campoRival.length === 0) {
+          this.mensaje = 'No hay cartas rivales.';
+          return;
+        }
+        this.campoRival.forEach(c => {
+          c.defensa -= 20;
+          if (c.defensa < 0) c.defensa = 0;
+        });
+        this.mensaje = `Redujiste la defensa de todas las cartas enemigas en 20.`;
+      } else if (tipoPrincipal === 'electric') {
+        this.vidaRival -= 500;
+        this.mensaje = `Causaste 500 de daño directo al rival.`;
+        this.efectoShakeRival = true;
+        setTimeout(() => this.efectoShakeRival = false, 500);
+        await this.verificarGanador();
+        if (this.partidaTerminada) return;
+      } else if (tipoPrincipal === 'psychic') {
+        this.turnosPerdidosRival = 1;
+        this.mensaje = `¡El rival perderá su próximo turno!`;
+      } else if (tipoPrincipal === 'poison') {
+        this.venenoRival = 300;
+        this.mensaje = `¡El rival perderá 300 PV cada turno!`;
+      } else if (tipoPrincipal === 'fighting') {
+        carta.ignoraDefensa = true;
+        this.mensaje = `${carta.nombre} ignorará la defensa en su próximo ataque.`;
+      } else {
+        if (this.mazoJugador.length > 0) {
+          const robo = this.gameService.robarCartas(this.mazoJugador, 1);
+          this.manoJugador = [...this.manoJugador, ...robo.cartasRobadas];
+          this.mazoJugador = robo.mazoRestante;
+          this.mensaje = `Robaste una carta extra.`;
+        }
+      }
+      await this.propagarEstado();
+    }, 800);
   }
 
   async finalizarTurnoJugador(): Promise<void> {
     if (this.turno !== 'jugador' || this.partidaTerminada) return;
     
+    this.campoJugador.forEach(c => {
+      c.multiplicadorAtaqueTemporal = 1;
+      c.ignoraDefensa = false;
+    });
+
+    if (this.venenoRival > 0) {
+      this.vidaRival -= this.venenoRival;
+    }
+
+    if (this.vidaRival <= 0) {
+      await this.verificarGanador();
+      if (this.partidaTerminada) return;
+    }
+
+    if (this.turnosPerdidosRival > 0) {
+      this.turnosPerdidosRival--;
+      
+      this.campoRival.forEach(c => {
+        c.multiplicadorAtaqueTemporal = 1;
+        c.ignoraDefensa = false;
+      });
+      this.yaRobo = false;
+      this.yaInvoco = false;
+      this.yaAtaco = false;
+      this.yaUsoHabilidad = false;
+      this.cartaJugadorSeleccionada = null;
+      this.mensaje = `¡El rival está confundido y pierde su turno! Vuelve a ser tu turno.`;
+      this.iniciarTemporizador();
+      await this.propagarEstado();
+      return;
+    }
+
     this.yaRobo = false;
     this.yaInvoco = false;
     this.yaAtaco = false;
@@ -440,9 +567,36 @@ export class JuegoOnline implements OnInit, OnDestroy {
     }
 
     this.turno = 'rival';
+    this.detenerTemporizador();
     this.mensaje = 'Turno del rival...';
     
     await this.propagarEstado(idRival);
+  }
+
+  iniciarTemporizador(): void {
+    this.detenerTemporizador();
+    this.tiempoTurno = 60;
+    if (isPlatformBrowser(this.platformId)) {
+      this.temporizador = setInterval(() => {
+        if (this.partidaTerminada || this.turno !== 'jugador') {
+          this.detenerTemporizador();
+          return;
+        }
+        this.tiempoTurno--;
+        if (this.tiempoTurno <= 0) {
+          this.mensaje = '¡Tiempo agotado! Tu turno terminó.';
+          this.finalizarTurnoJugador();
+        }
+        this.cdr.detectChanges();
+      }, 1000);
+    }
+  }
+
+  detenerTemporizador(): void {
+    if (this.temporizador) {
+      clearInterval(this.temporizador);
+      this.temporizador = null;
+    }
   }
 
   async verificarGanador(): Promise<void> {

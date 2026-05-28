@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { supabaseConfig } from '../supabase.config';
 
@@ -8,10 +9,19 @@ import { supabaseConfig } from '../supabase.config';
 export class SupabaseService {
   private supabase: SupabaseClient;
 
-  constructor() {
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+    const isBrowser = isPlatformBrowser(this.platformId);
+
     this.supabase = createClient(
       supabaseConfig.url,
-      supabaseConfig.anonKey
+      supabaseConfig.anonKey,
+      {
+        auth: {
+          persistSession: isBrowser,
+          autoRefreshToken: isBrowser,
+          detectSessionInUrl: isBrowser
+        }
+      }
     );
   }
 

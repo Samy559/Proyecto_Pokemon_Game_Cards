@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { forkJoin, map, Observable } from 'rxjs';
+import { Observable, of, from } from 'rxjs';
+import { map, tap, mergeMap, toArray } from 'rxjs/operators';
 import { Carta } from '../models/carta';
 
 @Injectable({
@@ -8,21 +9,25 @@ import { Carta } from '../models/carta';
 })
 export class PokemonService {
   private apiUrl = 'https://pokeapi.co/api/v2/pokemon';
+  private cacheCartas: Carta[] | null = null;
 
   constructor(private http: HttpClient) {}
 
   obtenerPokemones(): Observable<Carta[]> {
-    const peticiones = [];
-
-    // Generación 9: 906 al 1025
-    for (let i = 906; i <= 1025; i++) {
-      peticiones.push(this.http.get<any>(`${this.apiUrl}/${i}`));
+    if (this.cacheCartas) {
+      return of(this.cacheCartas);
     }
 
-    return forkJoin(peticiones).pipe(
-      map((pokemones: any[]) =>
-        pokemones.map((pokemon) => this.convertirPokemonACarta(pokemon))
-      )
+    const ids = [];
+    for (let i = 906; i <= 1025; i++) {
+      ids.push(i);
+    }
+
+    return from(ids).pipe(
+      mergeMap(id => this.http.get<any>(`${this.apiUrl}/${id}`), 10),
+      toArray(),
+      map(pokemones => pokemones.map(p => this.convertirPokemonACarta(p))),
+      tap(cartas => this.cacheCartas = cartas)
     );
   }
 
