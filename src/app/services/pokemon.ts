@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, from } from 'rxjs';
+import { Observable, of, from, forkJoin } from 'rxjs';
 import { map, tap, mergeMap, toArray } from 'rxjs/operators';
 import { Carta } from '../models/carta';
 
@@ -24,17 +24,21 @@ export class PokemonService {
     }
 
     return from(ids).pipe(
-      mergeMap(id => this.http.get<any>(`${this.apiUrl}/${id}`), 10),
+      mergeMap(id => forkJoin({
+        pokemon: this.http.get<any>(`${this.apiUrl}/${id}`),
+        species: this.http.get<any>(`https://pokeapi.co/api/v2/pokemon-species/${id}`)
+      }), 10),
       toArray(),
-      map(pokemones => pokemones.map(p => this.convertirPokemonACarta(p))),
+      map(resultados => resultados.map(r => this.convertirPokemonACarta(r.pokemon, r.species))),
       tap(cartas => this.cacheCartas = cartas)
     );
   }
 
-  private convertirPokemonACarta(pokemon: any): Carta {
+  private convertirPokemonACarta(pokemon: any, species: any): Carta {
     const ataque = this.obtenerStat(pokemon, 'attack');
     const defensa = this.obtenerStat(pokemon, 'defense');
     const vida = this.obtenerStat(pokemon, 'hp');
+    const evolucionaDe = species.evolves_from_species?.name;
 
     return {
       id: pokemon.id,
@@ -51,7 +55,8 @@ export class PokemonService {
       rareza: this.calcularRareza(ataque, defensa, vida),
       descripcion: `Carta de ${pokemon.name} de tipo ${pokemon.types
         .map((t: any) => t.type.name)
-        .join(', ')}.`
+        .join(', ')}.`,
+      evolucionaDe: evolucionaDe
     };
   }
 

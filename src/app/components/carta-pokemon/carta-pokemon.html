@@ -4,11 +4,23 @@
   [class.anim-attack]="carta.animAtacando"
   [class.anim-damage]="carta.animRecibiendoDano"
   [class.anim-ability]="carta.animHabilidad"
+  [class.anim-evolve]="carta.animEvolucion"
+  [class.holo]="carta.rareza === 'Legendaria' || carta.rareza === 'Épica'"
   (click)="onClick()"
 >
   <div class="carta-borde">
     <div class="carta-interior">
       
+      <!-- ESTADOS ALTERADOS -->
+      <div class="indicadores-estado" *ngIf="modo !== 'mini'">
+        <div *ngIf="carta.multiplicadorAtaqueTemporal && carta.multiplicadorAtaqueTemporal > 1" class="indicador buff-ataque" title="Ataque aumentado">
+          ⚔️+
+        </div>
+        <div *ngIf="carta.ignoraDefensa" class="indicador pierce-defensa" title="Ignora defensa">
+          🛡️💥
+        </div>
+      </div>
+
       <!-- HEADER -->
       <div class="carta-header">
         <div class="carta-nombre">

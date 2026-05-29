@@ -76,3 +76,15 @@ html, body {
   80% { transform: translateX(10px); }
   100% { transform: translateX(0); }
 }
+
+.anim-evolve {
+  animation: evolve-glow 1.5s ease-in-out;
+  z-index: 100; /* bring to front */
+}
+
+@keyframes evolve-glow {
+  0% { filter: drop-shadow(0 0 0px gold); transform: scale(1) translateY(0); }
+  30% { filter: drop-shadow(0 0 30px gold) brightness(1.5); transform: scale(1.1) translateY(-20px); }
+  70% { filter: drop-shadow(0 0 40px white) brightness(2); transform: scale(1.15) translateY(-20px); }
+  100% { filter: drop-shadow(0 0 0px gold); transform: scale(1) translateY(0); }
+}

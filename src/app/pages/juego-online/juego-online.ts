@@ -1,29 +1,18 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angular/core';
-import { NgFor, NgIf, DatePipe, TitleCasePipe, isPlatformBrowser } from '@angular/common';
+import { NgFor, NgIf, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 
 import { SupabaseService } from '../../services/supabase';
 import { PokemonService } from '../../services/pokemon';
 import { GameService } from '../../services/game';
+import { MatchEngineService, MatchState } from '../../services/match-engine';
 import { MazoService } from '../../services/mazo';
 import { AudioService } from '../../services/audio';
+import { MonedasService } from '../../services/monedas';
 import { Carta } from '../../models/carta';
 import { CartaPokemon } from '../../components/carta-pokemon/carta-pokemon';
-
-interface JugadorState {
-  mazo: Carta[];
-  mano: Carta[];
-  campo: Carta[];
-  descarte: Carta[];
-  yaRobo: boolean;
-  yaInvoco: boolean;
-  yaAtaco: boolean;
-  yaUsoHabilidad: boolean;
-  turnosPerdidos: number;
-  nivelVeneno: number;
-}
 
 @Component({
   selector: 'app-juego-online',
@@ -34,7 +23,6 @@ interface JugadorState {
 })
 export class JuegoOnline implements OnInit, OnDestroy {
   codigoSala = '';
-  mensaje = '';
   cargando = false;
 
   partidaActual: any = null;
@@ -42,51 +30,72 @@ export class JuegoOnline implements OnInit, OnDestroy {
   usuarioActualId: string | null = null;
   sesionActiva = false;
 
-  // Tablero
-  vidaJugador = 4000;
-  vidaRival = 4000;
-
-  mazoJugador: Carta[] = [];
-  manoJugador: Carta[] = [];
-  campoJugador: Carta[] = [];
-  descarteJugador: Carta[] = [];
-
-  mazoRival: Carta[] = [];
-  manoRival: Carta[] = [];
-  campoRival: Carta[] = [];
-  descarteRival: Carta[] = [];
-
-  turno: 'jugador' | 'rival' = 'rival';
-  cartaJugadorSeleccionada: number | null = null;
-
   tiempoTurno = 60;
   temporizador: any;
-
-  yaRobo = false;
-  yaInvoco = false;
-  yaAtaco = false;
-  yaUsoHabilidad = false;
-
-  turnosPerdidosJugador = 0;
-  turnosPerdidosRival = 0;
-  venenoJugador = 0;
-  venenoRival = 0;
-
+  cartaJugadorSeleccionada: number | null = null;
   efectoShakeJugador = false;
   efectoShakeRival = false;
+  
+  private subs = new Subscription();
+  historialGuardado = false;
+  yaDioRecompensas = false;
 
-  partidaTerminada = false;
-  resultadoPartida = '';
+  // --- GETTERS DE DELEGACIÓN AL ENGINE PARA LA UI ---
+  
+  get myIdx() { return this.soyJugador1() ? 'P1' : 'P2'; }
+  get rivalIdx() { return this.soyJugador1() ? 'P2' : 'P1'; }
+
+  get state() { return this.engine.state; }
+  get pMe() { return this.state ? this.engine.getJugador(this.myIdx) : null; }
+  get pRival() { return this.state ? this.engine.getJugador(this.rivalIdx) : null; }
+
+  get vidaJugador() { return this.pMe?.vida || 0; }
+  get vidaRival() { return this.pRival?.vida || 0; }
+  
+  get mazoJugador() { return this.pMe?.mazo || []; }
+  get manoJugador() { return this.pMe?.mano || []; }
+  get campoJugador() { return this.pMe?.campo || []; }
+  
+  get mazoRival() { return this.pRival?.mazo || []; }
+  get manoRival() { return this.pRival?.mano || []; }
+  get campoRival() { return this.pRival?.campo || []; }
+  
+  get turno() { return this.state?.turnoActual === this.myIdx ? 'jugador' : 'rival'; }
+  
+  get mensajes() { return this.state?.mensajes || []; }
+  get mensaje() { return this.mensajes.length > 0 ? this.mensajes[0] : ''; }
+  set mensaje(msg: string) { if (!this.state) return; this.engine.agregarMensaje(msg); }
+  
+  get yaRobo() { return this.pMe?.yaRobo || false; }
+  get yaInvoco() { return this.pMe?.yaInvoco || false; }
+  get yaAtaco() { return this.pMe?.yaAtaco || false; }
+  get yaUsoHabilidad() { return this.pMe?.yaUsoHabilidad || false; }
+  
+  get venenoJugador() { return this.pMe?.veneno || 0; }
+  get venenoRival() { return this.pRival?.veneno || 0; }
+
+  get partidaTerminada() { return this.state?.partidaTerminada || false; }
+  get resultadoPartida() {
+    if (!this.state?.partidaTerminada) return '';
+    if (this.state.ganador === this.myIdx) return 'Victoria';
+    if (this.state.ganador === this.rivalIdx) return 'Derrota';
+    return 'Empate';
+  }
 
   constructor(
     private supabaseService: SupabaseService,
     private pokemonService: PokemonService,
     private gameService: GameService,
+    public engine: MatchEngineService,
     private mazoService: MazoService,
     private audioService: AudioService,
+    public monedasService: MonedasService,
     private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) private platformId: Object
-  ) {}
+  ) {
+    // Inicializar con un estado vacío para que no explote la UI antes de cargar Supabase
+    this.engine.inicializarPartida([], [], 0);
+  }
 
   async ngOnInit(): Promise<void> {
     if (isPlatformBrowser(this.platformId)) {
@@ -99,12 +108,35 @@ export class JuegoOnline implements OnInit, OnDestroy {
       }
       this.sesionActiva = true;
       this.cargarPartidas();
+
+      this.subs.add(this.engine.onAnimShake.subscribe((target) => {
+        if (target === this.myIdx) {
+          this.efectoShakeJugador = true;
+          setTimeout(() => { this.efectoShakeJugador = false; this.cdr.detectChanges(); }, 500);
+        } else {
+          this.efectoShakeRival = true;
+          setTimeout(() => { this.efectoShakeRival = false; this.cdr.detectChanges(); }, 500);
+        }
+      }));
+
+      this.subs.add(this.engine.onStateChanged.subscribe(() => {
+        this.cdr.detectChanges();
+        if (this.partidaTerminada) {
+          // Si la partida terminó y no hemos procesado recompensas
+          if (this.state && this.state.ganador !== null && !this.yaDioRecompensas) {
+            this.yaDioRecompensas = true;
+            this.terminarPartidaCentralizado();
+          }
+        }
+      }));
+
     } else {
       this.mensaje = 'Cargando...';
     }
   }
 
   ngOnDestroy(): void {
+    this.subs.unsubscribe();
     this.detenerTemporizador();
     if (isPlatformBrowser(this.platformId)) {
       this.audioService.startMenuMusic();
@@ -144,7 +176,6 @@ export class JuegoOnline implements OnInit, OnDestroy {
     this.codigoSala = '';
     this.abrirPartida(data);
     
-    // Si somos el J2 y nos acabamos de unir, inicializamos nuestro mazo.
     if (this.soyJugador2()) {
       await this.inicializarMiEstadoEnPartida(data.id);
     }
@@ -160,16 +191,15 @@ export class JuegoOnline implements OnInit, OnDestroy {
       this.supabaseService.desuscribirseDePartidaOnline(this.partidaActual.codigo_sala);
     }
     this.partidaActual = partida;
-    this.partidaTerminada = this.partidaActual.estado === 'finalizada';
     
     this.supabaseService.suscribirseAPartidaOnline(this.partidaActual.codigo_sala, (payload) => {
       if (payload.eventType === 'DELETE') {
-        this.partidaTerminada = true;
-        this.resultadoPartida = this.resultadoPartida || 'Sala Eliminada';
         this.mensaje = 'La sala fue eliminada por el creador o la partida finalizó.';
+        this.engine.state.partidaTerminada = true;
         this.cdr.detectChanges();
         return;
       }
+      
       const viejoTurno = this.partidaActual.turno_actual;
       this.partidaActual = payload.new;
       this.sincronizarEstadoLocal();
@@ -181,15 +211,21 @@ export class JuegoOnline implements OnInit, OnDestroy {
           this.detenerTemporizador();
         }
       }
-
       this.cdr.detectChanges();
     });
 
-    // Si somos J1 y nuestro estado no existe (recien creada)
-    if (this.soyJugador1() && (!this.partidaActual.estado_juego || !this.partidaActual.estado_juego.jugador_1)) {
-      this.inicializarMiEstadoEnPartida(this.partidaActual.id);
+    if (this.soyJugador1() && (!this.partidaActual.estado_juego || !this.partidaActual.estado_juego.estadoP1)) {
+      this.inicializarMiEstadoEnPartida(this.partidaActual.id).catch(err => {
+        console.error('Error inicializando mazo online:', err);
+        this.mensaje = 'Error fatal al cargar tu mazo: ' + err.message;
+        this.cdr.detectChanges();
+      });
     } else {
-      this.sincronizarEstadoLocal();
+      try {
+        this.sincronizarEstadoLocal();
+      } catch (e: any) {
+        console.error('Error sincronizando estado:', e);
+      }
       if (this.esMiTurno()) {
         this.iniciarTemporizador();
       }
@@ -219,219 +255,155 @@ export class JuegoOnline implements OnInit, OnDestroy {
     cartas = this.gameService.barajarMazo(cartas);
     const robo = this.gameService.robarCartas(cartas, 5);
     
-    const miEstado: JugadorState = {
-      mazo: robo.mazoRestante,
-      mano: robo.cartasRobadas,
-      campo: [],
-      descarte: [],
-      yaRobo: false,
-      yaInvoco: false,
-      yaAtaco: false,
-      yaUsoHabilidad: false,
-      turnosPerdidos: 0,
-      nivelVeneno: 0
-    };
+    let baseEstado = this.partidaActual?.estado_juego;
+    if (typeof baseEstado === 'string') {
+      try { baseEstado = JSON.parse(baseEstado); } catch (e) {}
+    }
 
-    // Usamos SIEMPRE el estado más reciente de partidaActual para no sobreescribir al rival si ya inicializó
-    const estadoJuego = this.partidaActual?.estado_juego ? JSON.parse(JSON.stringify(this.partidaActual.estado_juego)) : {};
+    const estadoJuego: MatchState = (baseEstado && baseEstado.estadoP1) ? 
+      JSON.parse(JSON.stringify(baseEstado)) : 
+      {
+        estadoP1: this.engine.crearEstadoVacio(),
+        estadoP2: this.engine.crearEstadoVacio(),
+        turnoActual: 'P1',
+        partidaTerminada: false,
+        ganador: null,
+        mensajes: ['Preparando partida...']
+      };
     
-    if (this.soyJugador1()) estadoJuego.jugador_1 = miEstado;
-    if (this.soyJugador2()) estadoJuego.jugador_2 = miEstado;
+    const miClave = this.soyJugador1() ? 'estadoP1' : 'estadoP2';
+    estadoJuego[miClave].mazo = robo.mazoRestante;
+    estadoJuego[miClave].mano = robo.cartasRobadas;
+
+    this.engine.cargarEstado(estadoJuego);
 
     await this.supabaseService.actualizarEstadoJuegoPartidaOnline(partidaId, {
-      estado_juego: estadoJuego
+      estado_juego: JSON.stringify(estadoJuego),
+      vida_jugador_1: estadoJuego.estadoP1.vida,
+      vida_jugador_2: estadoJuego.estadoP2.vida
     });
     
     if (this.esMiTurno()) {
       this.iniciarTemporizador();
     }
-    
     this.mensaje = 'Mazo preparado. ¡A jugar!';
   }
 
   async obtenerMiMazo(): Promise<Carta[]> {
+    // 1. Intentar cargar el mazo armado localmente
+    const mazoLocal = this.mazoService.obtenerMazo();
+    if (mazoLocal && mazoLocal.length >= 5) {
+      return mazoLocal.map(c => this.gameService.clonarCarta(c));
+    }
+
+    // 2. Si no hay mazo local, intentar cargar de Supabase
     const { data } = await this.supabaseService.obtenerMazoSupabase();
     let cartasBase = data && data.cartas ? data.cartas : null;
     
+    // 3. Fallback a los 50 Pokémon iniciales
     if (!cartasBase || cartasBase.length < 5) {
       cartasBase = await firstValueFrom(this.pokemonService.obtenerPokemones());
     }
-    
     return cartasBase.map((c: any) => this.gameService.clonarCarta(c));
   }
 
   sincronizarEstadoLocal(): void {
-    const estado = this.partidaActual.estado_juego || {};
-    const miClave = this.soyJugador1() ? 'jugador_1' : 'jugador_2';
-    const rivalClave = this.soyJugador1() ? 'jugador_2' : 'jugador_1';
+    let estado = this.partidaActual.estado_juego;
+    if (estado) {
+      if (typeof estado === 'string') {
+        try { estado = JSON.parse(estado); } catch (e) {}
+      }
+      
+      if (!estado.estadoP1) return; // IGNORAR ESTADOS VACÍOS O CORRUPTOS
 
-    if (estado[miClave]) {
-      this.mazoJugador = estado[miClave].mazo || [];
-      this.manoJugador = estado[miClave].mano || [];
-      this.campoJugador = estado[miClave].campo || [];
-      this.descarteJugador = estado[miClave].descarte || [];
-      this.yaRobo = estado[miClave].yaRobo;
-      this.yaAtaco = estado[miClave].yaAtaco;
-      this.yaUsoHabilidad = estado[miClave].yaUsoHabilidad;
-      this.turnosPerdidosJugador = estado[miClave].turnosPerdidos || 0;
-      this.venenoJugador = estado[miClave].nivelVeneno || 0;
-      this.vidaJugador = this.soyJugador1() ? this.partidaActual.vida_jugador_1 : this.partidaActual.vida_jugador_2;
-    }
-
-    if (estado[rivalClave]) {
-      this.mazoRival = estado[rivalClave].mazo || [];
-      this.manoRival = estado[rivalClave].mano || [];
-      this.campoRival = estado[rivalClave].campo || [];
-      this.descarteRival = estado[rivalClave].descarte || [];
-      this.turnosPerdidosRival = estado[rivalClave].turnosPerdidos || 0;
-      this.venenoRival = estado[rivalClave].nivelVeneno || 0;
-      this.vidaRival = this.soyJugador1() ? this.partidaActual.vida_jugador_2 : this.partidaActual.vida_jugador_1;
-    }
-
-    this.turno = this.esMiTurno() ? 'jugador' : 'rival';
-    this.partidaTerminada = this.partidaActual.estado === 'finalizada';
-    
-    if (this.partidaTerminada) {
-      if (this.partidaActual.ganador === this.obtenerMiRol()) {
-        this.resultadoPartida = 'Victoria';
-      } else {
-        this.resultadoPartida = 'Derrota';
+      this.engine.cargarEstado(estado);
+      
+      if (estado.partidaTerminada) {
+        let miResultado = 'Empate';
+        if (estado.ganador === this.myIdx) miResultado = 'Victoria';
+        else if (estado.ganador === this.rivalIdx) miResultado = 'Derrota';
+        
+        // Terminar partida localmente si ya terminó en supabase (por si me desconecté)
+        // La actualización de estadísticas se hace solo cuando uno causa el final.
       }
     }
   }
 
-  async propagarEstado(siguienteTurno?: string): Promise<void> {
-    const estado = this.partidaActual.estado_juego || {};
-    const miClave = this.soyJugador1() ? 'jugador_1' : 'jugador_2';
-    const rivalClave = this.soyJugador1() ? 'jugador_2' : 'jugador_1';
-
-    estado[miClave] = {
-      mazo: this.mazoJugador,
-      mano: this.manoJugador,
-      campo: this.campoJugador,
-      descarte: this.descarteJugador,
-      yaRobo: this.yaRobo,
-      yaInvoco: this.yaInvoco,
-      yaAtaco: this.yaAtaco,
-      yaUsoHabilidad: this.yaUsoHabilidad,
-      turnosPerdidos: this.turnosPerdidosJugador,
-      nivelVeneno: this.venenoJugador
-    };
-
-    estado[rivalClave] = {
-      mazo: this.mazoRival,
-      mano: this.manoRival,
-      campo: this.campoRival,
-      descarte: this.descarteRival,
-      yaRobo: estado[rivalClave]?.yaRobo || false,
-      yaInvoco: estado[rivalClave]?.yaInvoco || false,
-      yaAtaco: estado[rivalClave]?.yaAtaco || false,
-      yaUsoHabilidad: estado[rivalClave]?.yaUsoHabilidad || false,
-      turnosPerdidos: this.turnosPerdidosRival,
-      nivelVeneno: this.venenoRival
-    };
-
-    const cambios: any = { estado_juego: estado };
+  async propagarEstado(siguienteTurnoJugador?: string): Promise<void> {
+    const estado = JSON.parse(JSON.stringify(this.engine.state));
+    // Guardarlo explícitamente como string JSON por si la columna en Supabase es tipo text
+    const cambios: any = { estado_juego: JSON.stringify(estado) };
     
-    if (siguienteTurno) {
-      cambios.turno_actual = siguienteTurno;
+    if (siguienteTurnoJugador) {
+      cambios.turno_actual = siguienteTurnoJugador;
     }
 
-    if (this.soyJugador1()) {
-      cambios.vida_jugador_1 = this.vidaJugador;
-      cambios.vida_jugador_2 = this.vidaRival;
-    } else {
-      cambios.vida_jugador_2 = this.vidaJugador;
-      cambios.vida_jugador_1 = this.vidaRival;
-    }
+    cambios.vida_jugador_1 = estado.estadoP1.vida;
+    cambios.vida_jugador_2 = estado.estadoP2.vida;
 
     await this.supabaseService.actualizarEstadoJuegoPartidaOnline(this.partidaActual.id, cambios);
   }
 
-  async terminarPartida(miResultado: 'Victoria' | 'Derrota'): Promise<void> {
-    this.partidaTerminada = true;
-    this.resultadoPartida = miResultado;
-    const ganador = miResultado === 'Victoria' ? this.obtenerMiRol() : (this.soyJugador1() ? 'Jugador 2' : 'Jugador 1');
-    await this.supabaseService.finalizarPartidaOnline(this.partidaActual.id, ganador);
+  async terminarPartidaCentralizado(): Promise<void> {
+    const ganadorIdx = this.engine.state.ganador;
+    let ganadorUserId = null;
+    let miResultado: 'Victoria'|'Derrota'|'Empate' = 'Empate';
+
+    if (ganadorIdx === 'P1') ganadorUserId = this.partidaActual.jugador_1;
+    if (ganadorIdx === 'P2') ganadorUserId = this.partidaActual.jugador_2;
+    
+    if (ganadorIdx === this.myIdx) miResultado = 'Victoria';
+    else if (ganadorIdx === this.rivalIdx) miResultado = 'Derrota';
+
+    await this.supabaseService.finalizarPartidaOnline(this.partidaActual.id, ganadorUserId || 'Empate');
     await this.supabaseService.actualizarEstadisticasPerfil(miResultado);
     this.mensaje = miResultado === 'Victoria' ? '¡Ganaste la partida!' : 'Perdiste la partida.';
+
+    if (miResultado === 'Victoria') {
+      this.monedasService.sumar(50);
+      setTimeout(() => alert('¡Victoria! Ganaste 50 Monedas Pokémon 🪙'), 500);
+    } else {
+      this.monedasService.sumar(10);
+      setTimeout(() => alert('Ganaste 10 Monedas Pokémon 🪙 por participar.'), 500);
+    }
   }
 
-  // --- LOGICA DE JUEGO (IDÉNTICA A JUEGO-CPU PERO PROPAGANDO ESTADO) ---
+  // --- LOGICA DE JUEGO UI A ENGINE ---
 
   async robarCartaJugador(): Promise<void> {
     if (this.turno !== 'jugador' || this.partidaTerminada || this.yaRobo) return;
-    if (this.mazoJugador.length === 0) {
-      this.mensaje = 'No tienes más cartas.';
-      return;
+    if (this.engine.robarCarta(this.myIdx, 1)) {
+      this.audioService.playDrawCard();
+      this.mensaje = 'Robaste una carta.';
+      await this.propagarEstado();
     }
-    const robo = this.gameService.robarCartas(this.mazoJugador, 1);
-    this.manoJugador = [...this.manoJugador, ...robo.cartasRobadas];
-    this.mazoJugador = robo.mazoRestante;
-    this.yaRobo = true;
-    this.mensaje = 'Robaste una carta.';
-    await this.propagarEstado();
   }
 
   async invocarCarta(indice: number): Promise<void> {
     if (this.turno !== 'jugador' || this.partidaTerminada || this.yaInvoco) return;
-    if (this.campoJugador.length >= 5) {
-      this.mensaje = 'Tu campo está lleno.';
-      return;
+    if (this.engine.invocarCarta(this.myIdx, indice, false)) {
+      this.audioService.playBeep();
+      await this.propagarEstado();
     }
-    const carta = this.manoJugador[indice];
-    this.campoJugador.push(carta);
-    this.manoJugador.splice(indice, 1);
-    this.yaInvoco = true;
-    this.mensaje = `Invocaste a ${carta.nombre}.`;
-    await this.propagarEstado();
   }
 
   seleccionarCartaJugador(indice: number): void {
     if (this.turno !== 'jugador' || this.partidaTerminada) return;
     this.cartaJugadorSeleccionada = indice;
     this.mensaje = `Seleccionaste a ${this.campoJugador[indice].nombre} para atacar.`;
+    this.audioService.playBeep();
   }
 
   async atacarCartaRival(indiceRival: number): Promise<void> {
     if (this.turno !== 'jugador' || this.partidaTerminada || this.yaAtaco || this.cartaJugadorSeleccionada === null) return;
-
-    const atacante = this.campoJugador[this.cartaJugadorSeleccionada];
-    const defensora = this.campoRival[indiceRival];
-
-    this.yaAtaco = true;
+    this.audioService.playAttack();
+    const idxA = this.cartaJugadorSeleccionada;
     this.cartaJugadorSeleccionada = null;
-
-    atacante.animAtacando = true;
-    defensora.animRecibiendoDano = true;
-
-    setTimeout(async () => {
-      atacante.animAtacando = false;
-      defensora.animRecibiendoDano = false;
-
-      const resultado = this.gameService.calcularDañoContraCarta(atacante, defensora);
-
-      defensora.vidaActual = resultado.vidaDefensora;
-      atacante.vidaActual = resultado.vidaAtacante;
-      this.mensaje = resultado.mensaje;
-
-      if (defensora.vidaActual <= 0) {
-        this.descarteRival.push(defensora);
-        this.campoRival.splice(indiceRival, 1);
-        this.mensaje += ` Destruiste a ${defensora.nombre}.`;
-      }
-      if (atacante.vidaActual <= 0) {
-        const idxAtacante = this.campoJugador.indexOf(atacante);
-        if (idxAtacante > -1) {
-          this.descarteJugador.push(atacante);
-          this.campoJugador.splice(idxAtacante, 1);
-        }
-        this.mensaje += ` Tu ${atacante.nombre} fue destruido.`;
-      }
-
+    
+    this.engine.atacarCarta(this.myIdx, idxA, indiceRival, async () => {
       await this.propagarEstado();
-      this.verificarGanador();
-    }, 500);
+      if (this.partidaTerminada) this.terminarPartidaCentralizado();
+    });
   }
 
   async atacarDirectoRival(): Promise<void> {
@@ -440,137 +412,48 @@ export class JuegoOnline implements OnInit, OnDestroy {
       this.mensaje = 'No puedes atacar directo si el rival tiene cartas en campo.';
       return;
     }
-
-    const atacante = this.campoJugador[this.cartaJugadorSeleccionada];
     
-    this.yaAtaco = true;
+    this.audioService.playAttack();
+    const idxA = this.cartaJugadorSeleccionada;
     this.cartaJugadorSeleccionada = null;
 
-    atacante.animAtacando = true;
-    this.efectoShakeRival = true;
-
-    setTimeout(async () => {
-      atacante.animAtacando = false;
-      this.efectoShakeRival = false;
-
-      const daño = this.gameService.calcularDañoDirecto(atacante);
-      this.vidaRival -= daño;
-      this.mensaje = `Atacaste directo con ${atacante.nombre} por ${daño} de daño.`;
-      
+    this.engine.atacarDirecto(this.myIdx, idxA, async () => {
       await this.propagarEstado();
-      this.verificarGanador();
-    }, 500);
+      if (this.partidaTerminada) this.terminarPartidaCentralizado();
+    });
   }
 
   async usarHabilidadJugador(indice: number): Promise<void> {
     if (this.turno !== 'jugador' || this.partidaTerminada || this.yaUsoHabilidad) return;
-
-    const carta = this.campoJugador[indice];
-    const tipoPrincipal = carta.tipos[0];
-
-    this.yaUsoHabilidad = true;
-    carta.animHabilidad = true;
-
-    setTimeout(async () => {
-      carta.animHabilidad = false;
-
-      if (tipoPrincipal === 'fire') {
-        carta.multiplicadorAtaqueTemporal = 2;
-        this.mensaje = `${carta.nombre} duplicó su ataque este turno.`;
-      } else if (tipoPrincipal === 'grass') {
-        this.vidaJugador += 1000;
-        if (this.vidaJugador > 4000) this.vidaJugador = 4000;
-        this.mensaje = `${carta.nombre} te curó 1000 puntos de vida.`;
-      } else if (tipoPrincipal === 'water') {
-        if (this.campoRival.length === 0) {
-          this.mensaje = 'No hay cartas rivales.';
-          return;
-        }
-        this.campoRival.forEach(c => {
-          c.defensa -= 20;
-          if (c.defensa < 0) c.defensa = 0;
-        });
-        this.mensaje = `Redujiste la defensa de todas las cartas enemigas en 20.`;
-      } else if (tipoPrincipal === 'electric') {
-        this.vidaRival -= 500;
-        this.mensaje = `Causaste 500 de daño directo al rival.`;
-        this.efectoShakeRival = true;
-        setTimeout(() => this.efectoShakeRival = false, 500);
-        await this.verificarGanador();
-        if (this.partidaTerminada) return;
-      } else if (tipoPrincipal === 'psychic') {
-        this.turnosPerdidosRival = 1;
-        this.mensaje = `¡El rival perderá su próximo turno!`;
-      } else if (tipoPrincipal === 'poison') {
-        this.venenoRival = 300;
-        this.mensaje = `¡El rival perderá 300 PV cada turno!`;
-      } else if (tipoPrincipal === 'fighting') {
-        carta.ignoraDefensa = true;
-        this.mensaje = `${carta.nombre} ignorará la defensa en su próximo ataque.`;
-      } else {
-        if (this.mazoJugador.length > 0) {
-          const robo = this.gameService.robarCartas(this.mazoJugador, 1);
-          this.manoJugador = [...this.manoJugador, ...robo.cartasRobadas];
-          this.mazoJugador = robo.mazoRestante;
-          this.mensaje = `Robaste una carta extra.`;
-        }
-      }
+    this.audioService.playBeep();
+    
+    this.engine.usarHabilidad(this.myIdx, indice, false, async () => {
       await this.propagarEstado();
-    }, 800);
+      if (this.partidaTerminada) this.terminarPartidaCentralizado();
+    });
   }
 
   async finalizarTurnoJugador(): Promise<void> {
     if (this.turno !== 'jugador' || this.partidaTerminada) return;
-    
-    this.campoJugador.forEach(c => {
-      c.multiplicadorAtaqueTemporal = 1;
-      c.ignoraDefensa = false;
-    });
-
-    if (this.venenoRival > 0) {
-      this.vidaRival -= this.venenoRival;
-    }
-
-    if (this.vidaRival <= 0) {
-      await this.verificarGanador();
-      if (this.partidaTerminada) return;
-    }
-
-    if (this.turnosPerdidosRival > 0) {
-      this.turnosPerdidosRival--;
-      
-      this.campoRival.forEach(c => {
-        c.multiplicadorAtaqueTemporal = 1;
-        c.ignoraDefensa = false;
-      });
-      this.yaRobo = false;
-      this.yaInvoco = false;
-      this.yaAtaco = false;
-      this.yaUsoHabilidad = false;
-      this.cartaJugadorSeleccionada = null;
-      this.mensaje = `¡El rival está confundido y pierde su turno! Vuelve a ser tu turno.`;
-      this.iniciarTemporizador();
-      await this.propagarEstado();
-      return;
-    }
-
-    this.yaRobo = false;
-    this.yaInvoco = false;
-    this.yaAtaco = false;
-    this.yaUsoHabilidad = false;
     this.cartaJugadorSeleccionada = null;
-
+    
     const idRival = this.soyJugador1() ? this.partidaActual.jugador_2 : this.partidaActual.jugador_1;
     if (!idRival) {
       this.mensaje = 'Aún no hay rival unido a la sala.';
       return;
     }
 
-    this.turno = 'rival';
     this.detenerTemporizador();
     this.mensaje = 'Turno del rival...';
+    this.audioService.playBeep();
     
-    await this.propagarEstado(idRival);
+    this.engine.finalizarTurno(this.myIdx, false);
+
+    // Guardar los cambios e indicar de quién es el turno
+    const idTurnoGlobal = this.engine.state.turnoActual === 'P1' ? this.partidaActual.jugador_1 : this.partidaActual.jugador_2;
+    await this.propagarEstado(idTurnoGlobal);
+
+    if (this.partidaTerminada) this.terminarPartidaCentralizado();
   }
 
   iniciarTemporizador(): void {
@@ -599,30 +482,9 @@ export class JuegoOnline implements OnInit, OnDestroy {
     }
   }
 
-  async verificarGanador(): Promise<void> {
-    if (this.vidaJugador <= 0 || (this.mazoJugador.length === 0 && this.manoJugador.length === 0 && this.campoJugador.length === 0)) {
-      await this.terminarPartida('Derrota');
-      return;
-    }
-    if (this.vidaRival <= 0 || (this.mazoRival.length === 0 && this.manoRival.length === 0 && this.campoRival.length === 0)) {
-      await this.terminarPartida('Victoria');
-      return;
-    }
-  }
-
-  // --- HELPER METHODS ---
-
-  soyJugador1(): boolean {
-    return this.partidaActual?.jugador_1 === this.usuarioActualId;
-  }
-
-  soyJugador2(): boolean {
-    return this.partidaActual?.jugador_2 === this.usuarioActualId;
-  }
-
-  esMiTurno(): boolean {
-    return this.partidaActual?.turno_actual === this.usuarioActualId;
-  }
+  soyJugador1(): boolean { return this.partidaActual?.jugador_1 === this.usuarioActualId; }
+  soyJugador2(): boolean { return this.partidaActual?.jugador_2 === this.usuarioActualId; }
+  esMiTurno(): boolean { return this.partidaActual?.turno_actual === this.usuarioActualId; }
 
   obtenerMiRol(): string {
     if (this.soyJugador1()) return 'Jugador 1';

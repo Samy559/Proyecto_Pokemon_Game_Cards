@@ -15,4 +15,6 @@ export interface Carta {
   animAtacando?: boolean;
   animRecibiendoDano?: boolean;
   animHabilidad?: boolean;
+  evolucionaDe?: string;
+  animEvolucion?: boolean;
 }

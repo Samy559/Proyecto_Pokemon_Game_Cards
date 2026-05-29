@@ -10,6 +10,7 @@ import { JuegoOnline } from './pages/juego-online/juego-online';
 import { Historial } from './pages/historial/historial';
 import { Resultados } from './pages/resultados/resultados';
 import { Reglas } from './pages/reglas/reglas';
+import { Tienda } from './pages/tienda/tienda';
 
 export const routes: Routes = [
   { path: '', component: Inicio },
@@ -22,5 +23,6 @@ export const routes: Routes = [
   { path: 'historial', component: Historial },
   { path: 'resultados', component: Resultados },
   { path: 'reglas', component: Reglas },
+  { path: 'tienda', component: Tienda },
   { path: '**', redirectTo: '' }
 ];

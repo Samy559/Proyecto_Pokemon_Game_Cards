@@ -1,12 +1,13 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { NgIf, isPlatformBrowser } from '@angular/common';
+import { NgIf, AsyncPipe, isPlatformBrowser } from '@angular/common';
 
 import { SupabaseService } from '../../services/supabase';
+import { MonedasService } from '../../services/monedas';
 
 @Component({
   selector: 'app-menu',
-  imports: [RouterLink, NgIf],
+  imports: [RouterLink, NgIf, AsyncPipe],
   templateUrl: './menu.html',
   styleUrl: './menu.css'
 })
@@ -22,6 +23,7 @@ export class Menu implements OnInit {
 
   constructor(
     private supabaseService: SupabaseService,
+    public monedasService: MonedasService,
     private router: Router,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}

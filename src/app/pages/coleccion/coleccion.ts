@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { NgFor, NgIf, TitleCasePipe } from '@angular/common';
 import { PokemonService } from '../../services/pokemon';
+import { ColeccionService } from '../../services/coleccion';
 import { Carta } from '../../models/carta';
 import { RouterLink } from '@angular/router';
 import { CartaPokemon } from '../../components/carta-pokemon/carta-pokemon';
@@ -17,7 +18,10 @@ export class Coleccion implements OnInit {
   cargando = true;
   error = '';
 
-  constructor(private pokemonService: PokemonService) {}
+  constructor(
+    private pokemonService: PokemonService,
+    public coleccionService: ColeccionService
+  ) {}
 
   ngOnInit(): void {
     this.cargarCartas();

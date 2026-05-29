@@ -82,3 +82,33 @@
   gap: 25px;
   justify-items: center;
 }
+
+.carta-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.carta-bloqueada {
+  filter: grayscale(100%) brightness(0.5);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.cantidad-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: #e24a4a;
+  color: white;
+  border: 3px solid #333;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 10;
+  box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+}

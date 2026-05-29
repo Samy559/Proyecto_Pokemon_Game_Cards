@@ -1,0 +1,55 @@
+<div class="tienda-container">
+  <header class="tienda-header">
+    <h1>PokéTienda</h1>
+    <div class="header-controles">
+      <div class="monedas-badge nes-badge">
+        <span class="is-warning" style="margin-right: 15px;">🪙 {{ monedasService.monedas$ | async }} Monedas</span>
+      </div>
+      <a routerLink="/menu" class="nes-btn is-error">Volver al menú</a>
+    </div>
+  </header>
+
+  <main class="tienda-main" *ngIf="!cargando">
+    <div class="sobre-display" *ngIf="cartasMostradas.length === 0">
+      <div class="sobre-imagen" [class.shake]="abriendoSobre">
+        <!-- Puedes usar una imagen real de un sobre si la tuvieras -->
+        <div class="sobre-placeholder">
+          <h3>Sobre Básico</h3>
+          <p>Contiene 5 cartas aleatorias</p>
+          <span class="precio">🪙 100</span>
+        </div>
+      </div>
+      
+      <button 
+        class="nes-btn is-success comprar-btn" 
+        (click)="comprarSobre()"
+        [disabled]="abriendoSobre">
+        {{ abriendoSobre ? 'Abriendo...' : 'Comprar Sobre' }}
+      </button>
+      
+      <p class="probabilidades">
+        <small>Probabilidades: 5% Legendaria, 15% Épica, 80% Común</small>
+      </p>
+    </div>
+
+    <!-- Resultados Gacha -->
+    <div class="resultados-gacha" *ngIf="cartasMostradas.length > 0">
+      <h2 class="nes-text is-success">¡Nuevas Cartas!</h2>
+      
+      <div class="cartas-grid">
+        <app-carta-pokemon 
+          *ngFor="let carta of cartasMostradas; let i = index" 
+          [carta]="carta"
+          class="carta-revelada"
+          [style.animation-delay]="(i * 0.2) + 's'">
+        </app-carta-pokemon>
+      </div>
+
+      <button class="nes-btn is-primary" (click)="cerrarResultados()">Aceptar</button>
+    </div>
+  </main>
+  
+  <div *ngIf="cargando" class="cargando-msg">
+    Cargando tienda...
+  </div>
+</div>

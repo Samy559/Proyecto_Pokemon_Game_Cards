@@ -3,7 +3,6 @@
   <header class="juego-header">
     <div>
       <h1>Duelo contra Computadora</h1>
-      <p>{{ mensaje }}</p>
     </div>
 
     <a routerLink="/menu" class="nes-btn is-error">Volver al menú</a>
@@ -40,6 +39,7 @@
         <span>Vida: {{ vidaCpu }}</span>
         <span>Mazo: {{ mazoCpu.length }}</span>
         <span>Mano: {{ manoCpu.length }}</span>
+        <span *ngIf="venenoCpu > 0" class="veneno-badge" title="Veneno">☠️ -{{ venenoCpu }}/turno</span>
       </div>
 
       <h3>Campo CPU</h3>
@@ -86,16 +86,27 @@
       </button>
     </section>
 
-    <!-- ESTADO DEL TURNO -->
-    <section class="estado-turno nes-container with-title">
-      <p class="title">Turno</p>
-      <p>Actual: <strong>{{ turno }}</strong></p>
-      <p *ngIf="turno === 'jugador'">Tiempo restante: <strong [class.nes-text]="true" [class.is-error]="tiempoTurno <= 10">{{ tiempoTurno }}s</strong></p>
-      <p>Robo: <strong>{{ yaRobo ? 'Sí' : 'No' }}</strong></p>
-      <p>Invocación: <strong>{{ yaInvoco ? 'Sí' : 'No' }}</strong></p>
-      <p>Ataque: <strong>{{ yaAtaco ? 'Sí' : 'No' }}</strong></p>
-      <p>Habilidad: <strong>{{ yaUsoHabilidad ? 'Sí' : 'No' }}</strong></p>
-    </section>
+    <!-- COLUMNA IZQUIERDA -->
+    <aside class="columna-izquierda">
+      <!-- ESTADO DEL TURNO -->
+      <section class="estado-turno nes-container with-title">
+        <p class="title">Turno</p>
+        <p>Actual: <strong>{{ turno }}</strong></p>
+        <p *ngIf="turno === 'jugador'">Tiempo restante: <strong [class.nes-text]="true" [class.is-error]="tiempoTurno <= 10">{{ tiempoTurno }}s</strong></p>
+        <p>Robo: <strong>{{ yaRobo ? 'Sí' : 'No' }}</strong></p>
+        <p>Invocación: <strong>{{ yaInvoco ? 'Sí' : 'No' }}</strong></p>
+        <p>Ataque: <strong>{{ yaAtaco ? 'Sí' : 'No' }}</strong></p>
+        <p>Habilidad: <strong>{{ yaUsoHabilidad ? 'Sí' : 'No' }}</strong></p>
+      </section>
+
+      <!-- REGISTRO DE BATALLA -->
+      <section class="battle-log nes-container with-title is-dark">
+        <p class="title">Registro de Batalla</p>
+        <div class="mensajes-container">
+          <p *ngFor="let msg of mensajes; let first = first" [class.nuevo-mensaje]="first">{{ msg }}</p>
+        </div>
+      </section>
+    </aside>
 
     <!-- ZONA JUGADOR -->
     <section class="zona jugador" [class.anim-screen-shake]="efectoShakeJugador">
@@ -105,6 +116,7 @@
         <span>Vida: {{ vidaJugador }}</span>
         <span>Mazo: {{ mazoJugador.length }}</span>
         <span>Mano: {{ manoJugador.length }}</span>
+        <span *ngIf="venenoJugador > 0" class="veneno-badge" title="Veneno">☠️ -{{ venenoJugador }}/turno</span>
       </div>
 
       <h3>Tu campo</h3>

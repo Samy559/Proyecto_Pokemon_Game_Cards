@@ -150,8 +150,14 @@
   margin-bottom: -25px; /* offset the scale space */
 }
 
-.estado-turno {
+.columna-izquierda {
   grid-area: estado;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.estado-turno {
   background: #fff;
   padding: 15px;
   display: flex;
@@ -207,4 +213,74 @@
   margin: 15px 0;
 }
 
+/* --- ESTILOS PARA EL BATTLE LOG --- */
+.battle-log {
+  flex: 1;
+  background: #212529 !important;
+  color: #f8f9fa;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  border-radius: 8px;
+  max-height: 250px;
+}
 
+.battle-log .title {
+  color: #fff !important;
+  background: #212529 !important;
+}
+
+.mensajes-container {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-right: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: #ffcb05 #333;
+}
+
+.mensajes-container::-webkit-scrollbar {
+  width: 6px;
+}
+.mensajes-container::-webkit-scrollbar-track {
+  background: #333;
+}
+.mensajes-container::-webkit-scrollbar-thumb {
+  background-color: #ffcb05;
+  border-radius: 3px;
+}
+
+.mensajes-container p {
+  margin: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 4px;
+}
+
+.nuevo-mensaje {
+  animation: highlightMessage 2s ease-out forwards;
+}
+
+@keyframes highlightMessage {
+  0% { color: #ffcb05; transform: translateX(5px); }
+  20% { color: #ffcb05; transform: translateX(0); }
+  100% { color: #f8f9fa; }
+}
+
+/* --- INDICADORES VISUALES GLOBALES --- */
+.veneno-badge {
+  background: #a040a8 !important;
+  color: #fff !important;
+  border-color: #333 !important;
+  box-shadow: 0 0 5px rgba(160, 64, 168, 0.8);
+  animation: pulseVeneno 1.5s infinite alternate;
+}
+
+@keyframes pulseVeneno {
+  from { box-shadow: 0 0 5px rgba(160, 64, 168, 0.8); }
+  to { box-shadow: 0 0 15px rgba(160, 64, 168, 1); }
+}

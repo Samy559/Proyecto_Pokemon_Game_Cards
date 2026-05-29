@@ -7,6 +7,7 @@ import { MazoService } from '../../services/mazo';
 import { Carta } from '../../models/carta';
 
 import { SupabaseService } from '../../services/supabase';
+import { ColeccionService } from '../../services/coleccion';
 import { CartaPokemon } from '../../components/carta-pokemon/carta-pokemon';
 
 @Component({
@@ -26,7 +27,8 @@ export class Mazo implements OnInit {
   constructor(
     private pokemonService: PokemonService,
     private mazoService: MazoService,
-    private supabaseService: SupabaseService
+    private supabaseService: SupabaseService,
+    private coleccionService: ColeccionService
   ) {}
 
   ngOnInit(): void {
@@ -40,9 +42,10 @@ export class Mazo implements OnInit {
 
     this.pokemonService.obtenerPokemones().subscribe({
       next: (cartas) => {
-        this.cartasDisponibles = cartas;
+        // Solo mostrar cartas que el jugador posee en su colección
+        this.cartasDisponibles = cartas.filter(c => this.coleccionService.poseeCarta(c.id));
         this.cargando = false;
-        this.mensaje = 'Selecciona hasta 20 cartas para tu mazo.';
+        this.mensaje = 'Selecciona hasta 20 cartas para tu mazo de las que posees.';
       },
       error: () => {
         this.cargando = false;

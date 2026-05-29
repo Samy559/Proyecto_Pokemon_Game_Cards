@@ -33,11 +33,16 @@
       <a *ngIf="!sesionActiva" routerLink="/login">
         Iniciar sesión o registrarse
       </a>
+
+      <div class="monedas-display nes-badge" style="margin-top: 1rem;">
+        <span class="is-warning">🪙 {{ monedasService.monedas$ | async }} Monedas</span>
+      </div>
     </section>
 
     <p>Selecciona una opción para continuar</p>
 
     <div class="menu-opciones">
+      <a routerLink="/tienda"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/nugget.png" alt="Tienda" class="menu-icon"> Tienda Gacha</a>
       <a routerLink="/coleccion"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/card-key.png" alt="Colección" class="menu-icon"> Colección de cartas</a>
       <a routerLink="/mazo"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Mazo" class="menu-icon"> Constructor de mazo</a>
       <a routerLink="/juego-cpu"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/vs-seeker.png" alt="CPU" class="menu-icon"> Jugar contra computadora</a>

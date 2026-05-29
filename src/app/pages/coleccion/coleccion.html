@@ -17,6 +17,15 @@
   </div>
 
   <div class="grid-cartas" *ngIf="!cargando && !error">
-    <app-carta-pokemon *ngFor="let carta of cartas" [carta]="carta" modo="completa"></app-carta-pokemon>
+    <div *ngFor="let carta of cartas" class="carta-wrapper">
+      <app-carta-pokemon 
+        [carta]="carta" 
+        modo="completa"
+        [class.carta-bloqueada]="!coleccionService.poseeCarta(carta.id)">
+      </app-carta-pokemon>
+      <div class="cantidad-badge" *ngIf="coleccionService.poseeCarta(carta.id)">
+        x{{ coleccionService.cantidadPoseida(carta.id) }}
+      </div>
+    </div>
   </div>
 </div>
